@@ -17,7 +17,9 @@ Ghi nhận mỗi phiên:
 
 - [ ] A-01: Import project bằng Godot 4.7.2, không thiếu tài nguyên.
 - [ ] A-02: Main scene chạy không có lỗi parser hoặc tài nguyên.
-- [ ] A-03: Nền đấu trường, nhân vật, quái và phù văn hiển thị ổn định.
+- [ ] A-03: Nền đá so le, nhân vật, quái, phù văn và các rào gỗ hiển thị ổn định.
+- [ ] A-07: Camera theo người chơi trên bản đồ lớn mà không lộ khoảng trống ngoài ranh giới.
+- [ ] A-08: Minimap cập nhật vị trí người chơi, quái và chướng ngại khi di chuyển.
 - [ ] A-04: Tiếng Việt hiển thị đúng dấu, không bị ô vuông hoặc cắt chữ.
 - [ ] A-05: Menu, tạm dừng, nâng cấp, thắng/thua đều có thể bấm.
 - [ ] A-06: Chạy thử bằng bàn phím: mũi tên, Space, F, Shift, E, Q, Esc.
@@ -29,7 +31,8 @@ Ghi nhận mỗi phiên:
 - [ ] B-03: Giữ joystick và bấm một nút kỹ năng đồng thời hoạt động.
 - [ ] B-04: Chạm nút hành động không gây di chuyển ngoài ý muốn.
 - [ ] B-05: Vùng chết joystick ngăn trôi nhẹ.
-- [ ] B-06: Năm nút hành động đọc được và không chồng lấn trên vivo V2120.
+- [ ] B-06: Bảy nút hành động đọc được, đủ vùng chạm và không chồng lấn trên vivo V2120.
+- [ ] B-09: Minimap và nút tạm dừng không che nhau hoặc che vùng điều khiển.
 - [ ] B-07: Vòng hồi chiêu và trạng thái thiếu nội lực rõ ràng.
 - [ ] B-08: Nút tạm dừng không bị che bởi phần viền/điều hướng hệ thống.
 
@@ -52,6 +55,10 @@ Ghi nhận mỗi phiên:
 - [ ] C-15: Hạ trùm tạo chiến thắng; hết 8 phút mà trùm còn sống là thất bại.
 - [ ] C-16: Sinh lực về 0 là thất bại.
 - [ ] C-17: Đánh diện rộng/đòn cuối không tạo sát thương hoặc phần thưởng lặp ngoài ý muốn.
+- [ ] C-18: Băng Phong chỉ dùng nội lực khi có quái trong vùng; quái bị làm chậm đúng thời lượng.
+- [ ] C-19: Lôi Chuỗi chọn tối đa bốn mục tiêu riêng biệt trong tầm và tiêu thụ Kiếm Ấn đúng một lần.
+- [ ] C-20: Hai phép mới không trừ nội lực hoặc bật hồi chiêu khi không có mục tiêu phù hợp.
+- [ ] C-21: Nhân vật và quái không xuyên qua collider của rào gỗ.
 
 ## D. Tiến trình, nâng cấp và vật phẩm
 
@@ -82,6 +89,8 @@ Ghi nhận mỗi phiên:
 - [ ] F-04: Chạy tối thiểu 10 phút, ghi bộ nhớ trước/trong/sau.
 - [ ] F-05: Ghi nhiệt độ pin và phần trăm pin đầu/cuối.
 - [ ] F-06: Chơi lặp 10 lượt, ghi crash, treo, lỗi lưu và giật nặng nhất.
+- [ ] F-07: Đo frame time khi camera di chuyển qua các ô nền khác nhau.
+- [ ] F-08: Đo FPS với 12 quái đang hoạt động và khi dùng đồng thời Băng Phong/Lôi Chuỗi.
 
 Mục tiêu tạm thời: gần 60 FPS ở cảnh nhẹ và ít nhất 30 FPS khi tải cao. Chưa có phép đo nào được xem là đạt.
 

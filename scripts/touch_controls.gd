@@ -7,6 +7,8 @@ signal shoot_pressed
 signal dodge_pressed
 signal skill_pressed
 signal ultimate_pressed
+signal ice_pressed
+signal lightning_pressed
 signal pause_pressed
 signal resume_requested
 signal restart_requested
@@ -23,11 +25,15 @@ var action_flash: Dictionary = {
 	"shoot": 0.0,
 	"dodge": 0.0,
 	"skill": 0.0,
-	"ultimate": 0.0
+	"ultimate": 0.0,
+	"ice": 0.0,
+	"lightning": 0.0
 }
 
-const JOYSTICK_RADIUS := 62.0
+const JOYSTICK_RADIUS := 54.0
 const DEAD_ZONE := 0.14
+var _redraw_rate_left: float = 0.0
+var _redraw_pending: bool = false
 
 
 func _ready() -> void:
@@ -37,13 +43,17 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var needs_redraw := false
 	for action in action_flash.keys():
 		var remaining: float = maxf(0.0, float(action_flash[action]) - delta)
 		if remaining != float(action_flash[action]):
 			action_flash[action] = remaining
-			needs_redraw = true
-	if needs_redraw:
+			_redraw_pending = true
+	if move_vector.length_squared() > 0.001:
+		_redraw_pending = true
+	_redraw_rate_left -= delta
+	if _redraw_pending and _redraw_rate_left <= 0.0:
+		_redraw_rate_left = 1.0 / 30.0
+		_redraw_pending = false
 		queue_redraw()
 
 
@@ -90,7 +100,7 @@ func _handle_press(pointer_id: int, point: Vector2) -> void:
 			if _pause_rect().has_point(point):
 				pause_pressed.emit()
 				return
-			for action in ["melee", "shoot", "dodge", "skill", "ultimate"]:
+			for action in ["melee", "shoot", "dodge", "skill", "ultimate", "ice", "lightning"]:
 				if _button_center(action).distance_to(point) <= _button_radius(action) + 7.0:
 					action_flash[action] = 0.16
 					queue_redraw()
@@ -105,6 +115,10 @@ func _handle_press(pointer_id: int, point: Vector2) -> void:
 							skill_pressed.emit()
 						"ultimate":
 							ultimate_pressed.emit()
+						"ice":
+							ice_pressed.emit()
+						"lightning":
+							lightning_pressed.emit()
 					return
 			if joystick_touch_id == -1 and point.x <= size.x * 0.43 and point.y >= size.y * 0.42:
 				joystick_touch_id = pointer_id
@@ -144,40 +158,50 @@ func _update_joystick(point: Vector2) -> void:
 	else:
 		move_vector = offset.normalized() * strength
 	movement_changed.emit(move_vector)
-	queue_redraw()
+	_redraw_pending = true
 
 
 func _joystick_center() -> Vector2:
-	return Vector2(98.0, size.y - 95.0)
+	return Vector2(91.0, size.y - 89.0)
 
 
 func _button_center(which: String) -> Vector2:
+	# Thumb-first layout: main actions sit low; expensive spells are grouped above and left.
+	# Positions are relative to the viewport so landscape phones with different resolutions work.
 	match which:
 		"melee":
-			return Vector2(size.x - 86.0, size.y - 82.0)
+			return Vector2(size.x - 66.0, size.y - 78.0)
 		"shoot":
-			return Vector2(size.x - 169.0, size.y - 123.0)
+			return Vector2(size.x - 76.0, size.y - 160.0)
 		"dodge":
-			return Vector2(size.x - 87.0, size.y - 166.0)
+			return Vector2(size.x - 148.0, size.y - 88.0)
 		"skill":
-			return Vector2(size.x - 173.0, size.y - 204.0)
+			return Vector2(size.x - 148.0, size.y - 174.0)
 		"ultimate":
-			return Vector2(size.x - 257.0, size.y - 166.0)
+			return Vector2(size.x - 235.0, size.y - 88.0)
+		"ice":
+			return Vector2(size.x - 235.0, size.y - 174.0)
+		"lightning":
+			return Vector2(size.x - 235.0, size.y - 260.0)
 	return Vector2.ZERO
 
 
 func _button_radius(which: String) -> float:
 	match which:
 		"melee":
-			return 36.0
+			return 35.0
 		"shoot":
-			return 31.0
+			return 29.0
 		"dodge":
-			return 30.0
+			return 29.0
 		"skill":
-			return 31.0
+			return 28.0
 		"ultimate":
-			return 34.0
+			return 30.0
+		"ice":
+			return 27.0
+		"lightning":
+			return 27.0
 	return 30.0
 
 
@@ -243,7 +267,7 @@ func _draw_menu(font: Font) -> void:
 	var relic_text := "BẢO VẬT PHẢN KÍCH — ĐÃ MỞ" if bool(stats.get("unlocked_relic", false)) else "MỞ BẢO VẬT PHẢN KÍCH • 35 TINH THẠCH"
 	_draw_button_rect(font, _unlock_rect(), relic_text)
 	_draw_centered(font, "Tinh thạch tích lũy: %d" % int(stats.get("crystals", 0)), Vector2(size.x * 0.5, size.y * 0.83), 15, Color(0.95, 0.78, 0.41))
-	_draw_centered(font, "Phím: mũi tên • Space: đánh • F: kiếm khí • Shift: lướt • E: phá trận • Q: tuyệt kỹ", Vector2(size.x * 0.5, size.y * 0.95), 11, Color(0.56, 0.69, 0.74))
+	_draw_centered(font, "Phím: mũi tên • Space: đánh • F: kiếm khí • Shift: lướt • E: phá trận • Q: tuyệt kỹ • R: băng • T: lôi", Vector2(size.x * 0.5, size.y * 0.95), 10, Color(0.56, 0.69, 0.74))
 
 
 func _draw_hud(font: Font) -> void:
@@ -277,6 +301,39 @@ func _draw_hud(font: Font) -> void:
 	draw_rect(_pause_rect(), Color(0.36, 0.75, 0.72, 0.75), false, 1.4)
 	draw_line(Vector2(size.x - 44.0, 20.0), Vector2(size.x - 44.0, 37.0), Color(0.88, 0.96, 0.93), 3.0)
 	draw_line(Vector2(size.x - 34.0, 20.0), Vector2(size.x - 34.0, 37.0), Color(0.88, 0.96, 0.93), 3.0)
+	_draw_minimap(font)
+
+
+func _draw_minimap(font: Font) -> void:
+	var map_rect := Rect2(size.x - 166.0, 57.0, 151.0, 84.0)
+	draw_rect(map_rect.grow(3.0), Color(0.12, 0.65, 0.66, 0.12), true)
+	draw_rect(map_rect, Color(0.012, 0.035, 0.041, 0.90), true)
+	draw_rect(map_rect, Color(0.36, 0.70, 0.68, 0.78), false, 1.2)
+	for grid_x in range(1, 4):
+		var gx := map_rect.position.x + map_rect.size.x * float(grid_x) / 4.0
+		draw_line(Vector2(gx, map_rect.position.y + 4.0), Vector2(gx, map_rect.end.y - 4.0), Color(0.30, 0.49, 0.49, 0.22), 1.0)
+	for grid_y in range(1, 3):
+		var gy := map_rect.position.y + map_rect.size.y * float(grid_y) / 3.0
+		draw_line(Vector2(map_rect.position.x + 4.0, gy), Vector2(map_rect.end.x - 4.0, gy), Color(0.30, 0.49, 0.49, 0.22), 1.0)
+	var world_size: Vector2 = stats.get("world_size", Vector2(2400.0, 1600.0))
+	var obstacles: Array = stats.get("obstacle_world_positions", [])
+	for position_value in obstacles:
+		var point: Vector2 = position_value
+		var ratio := Vector2(point.x / world_size.x, point.y / world_size.y).clamp(Vector2.ZERO, Vector2.ONE)
+		var marker := map_rect.position + ratio * map_rect.size
+		draw_rect(Rect2(marker - Vector2(2.2, 1.4), Vector2(4.4, 2.8)), Color(0.75, 0.48, 0.23, 0.95), true)
+	var enemies_on_map: Array = stats.get("enemy_world_positions", [])
+	for position_value in enemies_on_map:
+		var point: Vector2 = position_value
+		var ratio := Vector2(point.x / world_size.x, point.y / world_size.y).clamp(Vector2.ZERO, Vector2.ONE)
+		var marker := map_rect.position + ratio * map_rect.size
+		draw_circle(marker, 2.0, Color(1.0, 0.28, 0.24, 0.95))
+	var player_point: Vector2 = stats.get("player_world_position", world_size * 0.5)
+	var player_ratio := Vector2(player_point.x / world_size.x, player_point.y / world_size.y).clamp(Vector2.ZERO, Vector2.ONE)
+	var player_marker := map_rect.position + player_ratio * map_rect.size
+	draw_circle(player_marker, 4.3, Color(0.30, 0.98, 0.83, 0.28))
+	draw_circle(player_marker, 2.5, Color(0.56, 1.0, 0.88, 1.0))
+	draw_string(font, Vector2(map_rect.position.x + 5.0, map_rect.position.y + 13.0), "BẢN ĐỒ", HORIZONTAL_ALIGNMENT_LEFT, 55.0, 9, Color(0.75, 0.91, 0.88, 0.78))
 
 
 func _draw_controls(font: Font) -> void:
@@ -287,17 +344,19 @@ func _draw_controls(font: Font) -> void:
 	draw_arc(center, JOYSTICK_RADIUS - 7.0, 0.0, TAU, 48, Color(0.20, 0.42, 0.50, 0.50), 1.0)
 	draw_line(center + Vector2(-JOYSTICK_RADIUS + 12.0, 0.0), center + Vector2(JOYSTICK_RADIUS - 12.0, 0.0), Color(0.33, 0.60, 0.64, 0.24), 1.0)
 	draw_line(center + Vector2(0.0, -JOYSTICK_RADIUS + 12.0), center + Vector2(0.0, JOYSTICK_RADIUS - 12.0), Color(0.33, 0.60, 0.64, 0.24), 1.0)
-	var knob := center + move_vector * 31.0
-	draw_circle(knob + Vector2(1.0, 3.0), 24.0, Color(0.005, 0.02, 0.03, 0.46))
-	draw_circle(knob, 22.0, Color(0.13, 0.35, 0.43, 0.98))
-	draw_circle(knob, 17.0, Color(0.27, 0.67, 0.73, 0.95))
-	draw_arc(knob, 20.0, PI, TAU, 24, Color(0.79, 0.97, 0.95, 0.85), 1.8)
+	var knob := center + move_vector * 27.0
+	draw_circle(knob + Vector2(1.0, 3.0), 21.0, Color(0.005, 0.02, 0.03, 0.46))
+	draw_circle(knob, 19.0, Color(0.13, 0.35, 0.43, 0.98))
+	draw_circle(knob, 15.0, Color(0.27, 0.67, 0.73, 0.95))
+	draw_arc(knob, 17.0, PI, TAU, 24, Color(0.79, 0.97, 0.95, 0.85), 1.8)
 
 	_draw_action_button(font, "melee", "ĐÁNH", Color(0.60, 0.18, 0.21), float(stats.get("melee_cd", 0.0)), 0.36, 0.0)
 	_draw_action_button(font, "shoot", "KIẾM KHÍ", Color(0.15, 0.43, 0.57), float(stats.get("shoot_cd", 0.0)), 0.48, 9.0)
 	_draw_action_button(font, "dodge", "LƯỚT", Color(0.12, 0.53, 0.59), float(stats.get("dodge_cd", 0.0)), 1.15, 0.0)
 	_draw_action_button(font, "skill", "PHÁ TRẬN", Color(0.23, 0.43, 0.32), float(stats.get("skill_cd", 0.0)), 7.0, 32.0)
 	_draw_action_button(font, "ultimate", "TUYỆT KỸ", Color(0.48, 0.31, 0.12), 0.0, 0.0, 100.0)
+	_draw_action_button(font, "ice", "BĂNG PHONG", Color(0.18, 0.42, 0.62), float(stats.get("ice_cd", 0.0)), 9.5, 28.0)
+	_draw_action_button(font, "lightning", "LÔI CHUỖI", Color(0.30, 0.35, 0.64), float(stats.get("lightning_cd", 0.0)), 10.0, 34.0)
 
 	if message != "":
 		_draw_centered(font, message, Vector2(size.x * 0.5, size.y - 21.0), 13, Color(0.98, 0.87, 0.55))
@@ -313,9 +372,9 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 	if flash > 0.0:
 		fill = fill.lightened(0.38)
 	draw_circle(center + Vector2(1.0, 4.0), radius + 3.0, Color(0.0, 0.0, 0.0, 0.48))
-	draw_circle(center, radius + 3.0, Color(0.035, 0.08, 0.10, 0.94))
+	draw_circle(center, radius + 4.0, Color(0.035, 0.08, 0.10, 0.98))
 	draw_circle(center, radius, fill)
-	draw_arc(center, radius, 0.0, TAU, 48, Color(0.72, 0.91, 0.88, 0.92), 2.0)
+	draw_arc(center, radius, 0.0, TAU, 40, Color(0.80, 0.96, 0.94, 0.98), 2.2)
 	draw_arc(center, radius - 4.0, -PI * 0.82, PI * 0.82, 36, Color(0.96, 0.78, 0.42, 0.45), 1.0)
 
 	match action:
@@ -349,9 +408,15 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 				center + Vector2(-17.0, -8.0), center + Vector2(-5.0, -7.0)
 			]), Color(1.0, 0.88, 0.54))
 			draw_arc(center, 21.0, PI * 0.1, PI * 1.75, 32, Color(0.97, 0.74, 0.32, 0.72), 1.4)
+		"ice":
+			draw_colored_polygon(PackedVector2Array([center + Vector2(0.0, -17.0), center + Vector2(5.0, -5.0), center + Vector2(15.0, -8.0), center + Vector2(8.0, 1.0), center + Vector2(14.0, 11.0), center + Vector2(1.0, 8.0), center + Vector2(-7.0, 15.0), center + Vector2(-7.0, 3.0), center + Vector2(-15.0, -5.0), center + Vector2(-4.0, -5.0)]), Color(0.80, 0.97, 1.0))
+			draw_arc(center, 20.0, 0.0, TAU, 32, Color(0.56, 0.92, 1.0, 0.72), 1.4)
+		"lightning":
+			draw_colored_polygon(PackedVector2Array([center + Vector2(3.0, -19.0), center + Vector2(-9.0, 1.0), center + Vector2(-1.0, 1.0), center + Vector2(-4.0, 18.0), center + Vector2(10.0, -4.0), center + Vector2(2.0, -4.0)]), Color(0.91, 0.96, 1.0))
+			draw_arc(center, 20.0, 0.0, TAU, 32, Color(0.66, 0.82, 1.0, 0.68), 1.4)
 
-	var label_size := 10 if action == "skill" or action == "ultimate" or action == "shoot" else 12
-	draw_string(font, Vector2(center.x - radius - 12.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 12.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
+	var label_size := 9 if action == "ice" or action == "lightning" else (10 if action == "skill" or action == "ultimate" or action == "shoot" else 11)
+	draw_string(font, Vector2(center.x - radius - 13.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 13.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
 
 	if cooldown > 0.0 and max_cooldown > 0.0:
 		var remaining := clampf(cooldown / max_cooldown, 0.0, 1.0)

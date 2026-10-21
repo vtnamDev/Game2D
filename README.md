@@ -1,58 +1,67 @@
 # Game2D — Kiếm Khí Truyền Thuyết
 
-Prototype game hành động chiến thuật 2D góc nhìn từ trên xuống, viết bằng GDScript với Godot 4.7.2. Hướng mỹ thuật là pixel-art fantasy phương Đông pha dark fantasy, kết hợp sprite gốc dạng SVG, đấu trường procedural, kiếm khí, phù văn, vòng báo đòn và nút hành động phong cách fantasy.
+Prototype hành động chiến thuật 2D góc nhìn từ trên xuống, viết bằng GDScript với Godot 4.7.2. Bản mở rộng tập trung vào thế giới rộng hơn, chiến đấu có lựa chọn chiến thuật và giảm chi phí dựng cảnh trên Android.
 
-## Trạng thái hiện tại
+## Trạng thái
 
-- Nhánh nâng cấp: **feature/vn-visual-combat**.
-- Nhánh gameplay trước đó **prototype/m1-combat** vẫn được giữ; nhánh **main** không bị thay đổi.
-- Chạy ngang màn hình, logical viewport 960 × 540, Compatibility renderer.
-- Nhân vật kiếm khách có sprite gốc, hiệu ứng chém, lướt, kiếm khí, Phá Trận và Tuyệt Kỹ.
-- Sáu sprite gốc riêng cho kiếm khách, quỷ thường, quỷ nhanh, hộ vệ, tinh anh và trùm. Môi trường đá/rêu/tàn tích được dựng procedural; hiệu ứng báo đòn, ánh sáng giả lập và vệt đạn được vẽ bằng GDScript.
-- Nhiều loại địch có tốc độ, sinh lực, sát thương và thời gian báo đòn khác nhau.
-- Vòng chơi tối đa 8 phút. Trùm xuất hiện ở phút thứ 6; tiêu diệt trùm để thắng, hết giờ mà trùm còn sống là thất bại.
-- Giao diện, menu, thông báo và điều khiển đã chuyển sang tiếng Việt.
-- Quái thường có 7% cơ hội rơi một tinh thạch; tinh anh có 68% cơ hội rơi cụm 2–3 tinh thạch; trùm thưởng 10 tinh thạch.
-- Lên cấp từ 8 kinh nghiệm; ngưỡng kế tiếp tăng thêm 3, nhằm giảm số lần bảng nâng cấp ngắt nhịp chiến đấu.
-- Tiến trình tinh thạch và Bảo Vật Phản Kích được lưu cục bộ. Không cần đăng nhập, máy chủ, quảng cáo hoặc mua hàng trong bản thử nghiệm.
-- Sprite là tài nguyên gốc của dự án nhưng vẫn là bản nghệ thuật ban đầu; chưa có bộ hoạt ảnh sprite-sheet nhiều frame hoặc âm thanh hoàn chỉnh.
+- Nhánh nâng cấp gameplay/đồ họa: `feature/world-strategy-android-opt`.
+- Nhánh sửa hiển thị ban đầu: `fix/visible-actors-wood-barricades`.
+- Bản gameplay trước đó `prototype/m1-combat` vẫn còn; `main` không bị thay đổi.
+- Màn hình ngang, viewport logic 960 × 540, Compatibility renderer.
+- Bản đồ 2400 × 1600, camera bám kiếm khách, minimap hiện người chơi/quái/chướng ngại.
+- 12 rào gỗ có collider thật; nhân vật và quái có thể bị chặn đường.
+- Nền đá được vẽ theo vùng gần camera thay vì phải dựng chi tiết toàn bộ thế giới mỗi lần cập nhật.
+- Giới hạn 8 quái hoạt động đồng thời, thời gian sinh quái giãn hơn, VFX dùng một node quản lý với tối đa 22 hiệu ứng ngắn, âm thanh dùng 6 voice tái sử dụng; sprite nhân vật/quái và joystick được giới hạn tần suất redraw khoảng 30 FPS.
+- Cụm nút được sắp xếp lại thành ba cột nhỏ hơn để giảm che khu vực chiến đấu; joystick thu gọn và cập nhật hình tối đa 30 FPS khi đang kéo.
+- Hình thể nhân vật/quái được vẽ bằng GDScript để có hình dự phòng ngay cả khi sprite texture gặp vấn đề; nền đá, rêu, tàn tích và gỗ là hình học procedural.
+- Có quái thường, quái nhanh, hộ vệ, tinh anh và trùm; mỗi loại có thông số sinh lực, tốc độ, sát thương và thời gian báo đòn khác nhau.
+- Lượt chơi tối đa 8 phút; trùm xuất hiện ở phút thứ 6. Hạ trùm để thắng; hết giờ mà trùm còn sống là thất bại.
+- Tinh thạch và Bảo Vật Phản Kích được lưu cục bộ. Bản thử nghiệm không cần đăng nhập, máy chủ, quảng cáo hay mua hàng.
+
+Đây vẫn là prototype đồ họa 2D, chưa phải chất lượng thương mại. Chưa có bộ sprite-sheet hoạt ảnh nhiều khung hình, âm thanh chiến đấu hoàn chỉnh hoặc đo hiệu năng trên vivo V2120.
 
 ## Điều khiển
 
 | Nút | Chức năng |
 |---|---|
-| Joystick bên trái | Di chuyển |
-| Đánh | Chém cận chiến, gắn Kiếm Ấn và hồi một ít nội lực |
-| Kiếm Khí | Tự chọn kẻ địch gần nhất trong tầm; tốn 9 nội lực |
-| Lướt | Né đòn; lướt đúng lúc báo đòn sẽ phản kích và hồi nội lực |
-| Phá Trận | Đánh diện rộng; tốn 32 nội lực, hồi chiêu 7 giây |
-| Tuyệt Kỹ | Đánh diện rộng mạnh; yêu cầu đủ 100 nội lực |
+| Joystick trái | Di chuyển |
+| Đánh | Cận chiến, gắn Kiếm Ấn và hồi một ít nội lực |
+| Kiếm Khí | Tự chọn mục tiêu gần nhất trong tầm; tốn 9 nội lực |
+| Lướt | Né đòn; lướt đúng lúc báo đòn có thể phản kích |
+| Phá Trận | Gây sát thương diện rộng; tốn 32 nội lực, hồi chiêu 7 giây |
+| Tuyệt Kỹ | Đòn diện rộng mạnh; yêu cầu đủ 100 nội lực |
+| Băng Phong | Gây sát thương nhẹ và làm chậm nhóm quái; tốn 28 nội lực |
+| Lôi Chuỗi | Sét nảy qua tối đa 4 mục tiêu, thưởng thêm sát thương lên mục tiêu có Kiếm Ấn; tốn 34 nội lực |
+| Băng Phong | Đánh nhẹ và làm chậm quái gần đó trong 2,6 giây; tốn 28 nội lực, hồi chiêu 9,5 giây |
+| Lôi Chuỗi | Sét nảy qua tối đa 4 mục tiêu; tốn 34 nội lực, hồi chiêu 10 giây |
 | Nút II | Tạm dừng |
 
-Phím thử trên bàn phím: mũi tên di chuyển, Space đánh, F kiếm khí, Shift lướt, E Phá Trận, Q Tuyệt Kỹ, Esc tạm dừng.
+Phím thử trên bàn phím: mũi tên di chuyển, Space đánh, F kiếm khí, Shift lướt, E Phá Trận, Q Tuyệt Kỹ, R Băng Phong, T Lôi Chuỗi, Esc tạm dừng.
 
-## Kiểm tra tự động
+Phép Băng Phong/Lôi Chuỗi không tiêu hao nội lực hoặc bắt đầu hồi chiêu nếu không tìm thấy mục tiêu phù hợp.
 
-CI tải Godot 4.7.2 chính thức và chạy:
-1. Import/parse project.
+## Kiểm thử tự động
+
+GitHub Actions tải Godot 4.7.2 chính thức và thực hiện:
+1. Import/parse project, kiểm tra log lỗi script.
 2. Kiểm thử luật chiến đấu.
-3. Kiểm thử luồng scene, năng lượng, chiêu thức, combo, né phản kích, nâng cấp và phần thưởng.
+3. Kiểm thử scene: khởi tạo thanh trạng thái, camera/bản đồ, chướng ngại có collider, năng lượng, combo, né phản kích, phép mới, nâng cấp và phần thưởng.
 4. Khởi động scene chính ở chế độ headless.
 
-CI thành công chỉ xác nhận các bước chạy trên Linux headless. Nó **không chứng nhận FPS, nhiệt độ, mức tiêu thụ pin, cảm ứng đa điểm, font tiếng Việt trên điện thoại, xuất APK hay cài đặt trên vivo V2120**.
+CI thành công chỉ xác nhận các bước trên Linux headless. Nó **không chứng minh** FPS, nhiệt độ, mức tiêu thụ pin, cảm ứng đa điểm, font tiếng Việt trên điện thoại, xuất APK hay cài đặt thành công trên vivo V2120.
 
-## Mở project trên Android
+## Mở project trên Godot Android
 
-1. Tải ZIP của nhánh **feature/vn-visual-combat**.
-2. Trong Godot Android 4.7.2, chọn Nhập và chọn ZIP; nếu không được thì giải nén bằng trình quản lý tệp rồi chọn thư mục chứa **project.godot**.
-3. Mở project và nhấn Chạy.
-4. Kiểm tra điều khiển đồng thời, các nút năng lượng, trùm, bảng nâng cấp và font tiếng Việt trên thiết bị thật.
+1. Tải ZIP của nhánh `feature/world-strategy-android-opt`.
+2. Trong Godot Android 4.7.2, chọn **Nhập** và chọn ZIP. Nếu không chọn được ZIP, giải nén bằng trình quản lý tệp rồi chọn thư mục chứa `project.godot`.
+3. Mở project và nhấn **Chạy**.
+4. Kiểm tra camera khi di chuyển, minimap, collider rào gỗ, phép Băng Phong/Lôi Chuỗi và các nút cảm ứng cùng lúc.
 
-Chưa có APK đã xuất và kiểm thử trong repo này. Không nên coi bản project đang chạy trong editor là bằng chứng rằng APK đã sẵn sàng.
+Chưa có APK đã xuất và cài đặt kiểm thử trong repo. Không coi project chạy trong editor là bằng chứng rằng APK đã sẵn sàng. Mục tiêu là giảm công việc mỗi khung hình; chưa có phép đo FPS trên ARMv7, vì vậy không cam kết một con số hiệu năng trước khi kiểm thử trên vivo V2120.
 
 ## Nguyên tắc phát triển
 
 - Không sao chép sprite, âm thanh hoặc mã của game thương mại.
-- Giữ GDScript, không thêm C#/.NET, root, native plugin hay yêu cầu máy tính bàn.
-- Ưu tiên hình dáng dễ đọc, phản hồi đòn rõ, vùng chạm đủ lớn và hiệu năng ổn định.
-- Không tuyên bố hiệu năng hoặc kiểm thử thiết bị đạt yêu cầu cho đến khi có kết quả đo được.
+- Giữ GDScript; không yêu cầu PC, root, C#/.NET hay plugin native.
+- Ưu tiên silhouette rõ, tín hiệu báo đòn dễ đọc và hiệu năng ổn định hơn hiệu ứng nặng.
+- Không tuyên bố đã đạt mục tiêu FPS/hiệu năng nếu chưa đo trên thiết bị thật.

@@ -16,7 +16,9 @@ var perfect_counter_left: float = 0.0
 var animation_clock: float = 0.0
 var action_name: String = ""
 var action_time: float = 0.0
+var action_target_position: Vector2 = Vector2.ZERO
 var action_duration: float = 0.25
+var visual_refresh_left: float = 0.0
 var hurt_flash_left: float = 0.0
 func _ready() -> void:
 	# The hero is drawn by this node so it remains visible even if mobile SVG import fails.
@@ -48,7 +50,10 @@ func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
 	bounded_position.x = clampf(bounded_position.x, bounds.position.x, bounds.end.x)
 	bounded_position.y = clampf(bounded_position.y, bounds.position.y, bounds.end.y)
 	position = bounded_position
-	queue_redraw()
+	visual_refresh_left -= delta
+	if visual_refresh_left <= 0.0:
+		visual_refresh_left = 0.033
+		queue_redraw()
 
 
 func begin_dodge(direction: Vector2, is_perfect: bool) -> bool:
@@ -72,6 +77,7 @@ func begin_dodge(direction: Vector2, is_perfect: bool) -> bool:
 
 func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -> void:
 	action_name = next_action
+	action_target_position = target_position
 	match next_action:
 		"slash":
 			action_duration = 0.26
@@ -81,6 +87,10 @@ func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -
 			action_duration = 0.58
 		"ultimate":
 			action_duration = 0.88
+		"ice":
+			action_duration = 0.58
+		"lightning":
+			action_duration = 0.28
 		"dodge":
 			action_duration = 0.22
 		_:
@@ -127,15 +137,48 @@ func heal(amount: float) -> void:
 
 
 func _draw() -> void:
-	var bob := sin(animation_clock * 10.0) * 1.1 if velocity.length_squared() > 20.0 else sin(animation_clock * 2.5) * 0.35
+	var is_moving := velocity.length_squared() > 20.0
+	var bob := sin(animation_clock * 10.0) * 1.1 if is_moving else sin(animation_clock * 2.5) * 0.35
+	var action_progress := 1.0 - action_time / maxf(action_duration, 0.001) if action_time > 0.0 else 0.0
+	var jump_height := 0.0
+	var body_tilt := 0.0
+	var body_stretch := 0.0
+	if action_time > 0.0:
+		match action_name:
+			"burst":
+				jump_height = sin(action_progress * PI) * 15.0
+				body_tilt = sin(action_progress * PI) * 0.13
+			"ultimate":
+				jump_height = sin(action_progress * PI) * 30.0
+				body_tilt = sin(action_progress * PI) * 0.20
+			"ice":
+				jump_height = sin(action_progress * PI) * 8.0
+			"slash":
+				body_tilt = sin(action_progress * PI) * 0.18
+			"lightning":
+				body_tilt = -0.08
+	if dodge_left > 0.0:
+		jump_height = maxf(jump_height, sin(clampf(dodge_left / 0.22, 0.0, 1.0) * PI) * 8.0)
+		body_stretch = 0.14
 
-	# Contact shadow, ground-targeted spell rings, and weapon trails are kept separate from the sprite.
-	draw_set_transform(Vector2(1.0, 8.0 + bob), 0.0, Vector2(1.42, 0.57))
+	# A shrinking ground shadow and a rising body communicate jump/dodge height without real-time lights.
+	var shadow_scale := 1.0 - jump_height * 0.013
+	draw_set_transform(Vector2(1.0, 8.0 + bob), 0.0, Vector2(1.42 * shadow_scale, 0.57 * shadow_scale))
 	draw_circle(Vector2.ZERO, 14.0, Color(0.005, 0.012, 0.02, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_hero_body(bob)
+	_draw_hero_body(bob, jump_height, body_tilt, body_stretch)
 
-	if action_time > 0.0 and action_name == "burst":
+	if action_time > 0.0 and action_name == "ice":
+		var ice_progress := 1.0 - action_time / action_duration
+		var ice_radius := lerpf(28.0, 188.0, ice_progress)
+		draw_arc(Vector2.ZERO, ice_radius, ice_progress, TAU + ice_progress, 48, Color(0.18, 0.72, 1.0, 0.84 * (1.0 - ice_progress)), 4.0)
+		draw_arc(Vector2.ZERO, ice_radius * 0.72, 0.0, TAU, 36, Color(0.72, 0.96, 1.0, 0.54 * (1.0 - ice_progress)), 1.8)
+	elif action_time > 0.0 and action_name == "lightning":
+		var target_offset := action_target_position - global_position
+		if target_offset.length_squared() > 1.0:
+			draw_line(Vector2.ZERO, target_offset, Color(0.22, 0.76, 1.0, 0.30), 6.0)
+			draw_line(Vector2.ZERO, target_offset, Color(0.80, 0.98, 1.0, 0.90), 1.6)
+	elif action_time > 0.0 and action_name == "burst":
 		var progress := 1.0 - action_time / action_duration
 		var radius := lerpf(20.0, 148.0, progress)
 		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 56, Color(0.14, 0.94, 0.80, 0.90 * (1.0 - progress)), 4.0)
@@ -164,7 +207,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_hero_body(bob: float) -> void:
+func _draw_hero_body(bob: float, jump_height: float = 0.0, body_tilt: float = 0.0, body_stretch: float = 0.0) -> void:
 	var is_hurt := hurt_flash_left > 0.0
 	var is_dodging := dodge_left > 0.0
 	var cloak_color := Color(0.10, 0.29, 0.38)
@@ -176,8 +219,9 @@ func _draw_hero_body(bob: float) -> void:
 		cloak_color = Color(0.10, 0.62, 0.72)
 		armor_color = Color(0.52, 0.98, 1.0)
 
-	# Local art faces upward; rotate it toward the current movement/aim direction.
-	draw_set_transform(Vector2(0.0, bob), facing_direction.angle() + PI * 0.5, Vector2.ONE)
+	# Local art faces upward; a short lean and squash give each action a distinct silhouette.
+	var art_scale := Vector2(1.0 + body_stretch, 1.0 - body_stretch * 0.42) * (1.0 + jump_height * 0.003)
+	draw_set_transform(Vector2(0.0, bob - jump_height), facing_direction.angle() + PI * 0.5 + body_tilt, art_scale)
 
 	# Sword is layered behind the shoulder and body.
 	draw_line(Vector2(8.0, -7.0), Vector2(22.0, -29.0), Color(0.018, 0.035, 0.052), 6.0)
@@ -185,6 +229,21 @@ func _draw_hero_body(bob: float) -> void:
 	draw_line(Vector2(12.0, -14.0), Vector2(24.0, -32.0), Color(0.95, 1.0, 0.91), 1.1)
 	draw_line(Vector2(3.0, -10.0), Vector2(13.0, -3.0), Color(0.07, 0.10, 0.12), 4.0)
 	draw_line(Vector2(3.0, -10.0), Vector2(11.0, -4.0), Color(0.88, 0.61, 0.28), 2.1)
+	if action_time > 0.0 and action_name == "slash":
+		var swing_progress := 1.0 - action_time / action_duration
+		var blade_angle := lerpf(-2.35, 0.82, swing_progress)
+		var blade_direction := Vector2(cos(blade_angle), sin(blade_angle))
+		var blade_start := Vector2(2.0, -6.0)
+		var blade_end := blade_start + blade_direction * 34.0
+		draw_line(blade_start, blade_end, Color(0.02, 0.04, 0.06), 7.0)
+		draw_line(blade_start, blade_end, Color(0.55, 0.88, 0.92), 4.0)
+		draw_line(blade_start + Vector2(0.0, -1.2), blade_end + Vector2(0.0, -1.2), Color(0.94, 1.0, 0.97), 1.2)
+	elif action_time > 0.0 and (action_name == "burst" or action_name == "ultimate"):
+		var rise_progress := 1.0 - action_time / action_duration
+		var sword_raise := -24.0 if rise_progress < 0.58 else lerpf(-24.0, 2.0, (rise_progress - 0.58) / 0.42)
+		draw_line(Vector2(6.0, -5.0), Vector2(11.0, sword_raise - 10.0), Color(0.015, 0.03, 0.045), 7.0)
+		draw_line(Vector2(6.0, -5.0), Vector2(11.0, sword_raise - 10.0), Color(0.68, 0.91, 0.93), 3.5)
+		draw_line(Vector2(8.0, -7.0), Vector2(11.0, sword_raise - 10.0), Color(0.98, 1.0, 0.9), 1.1)
 
 	# Outer cloak silhouette and stepped hem make the actor readable against stone.
 	draw_colored_polygon(PackedVector2Array([
@@ -208,8 +267,11 @@ func _draw_hero_body(bob: float) -> void:
 	]), armor_color)
 
 	# Boots, shoulder plates, belt and a bright sash give the hero a clear silhouette.
-	draw_colored_polygon(PackedVector2Array([Vector2(-8.0, 7.0), Vector2(-2.0, 8.0), Vector2(-3.0, 14.0), Vector2(-8.0, 15.0), Vector2(-10.0, 12.0)]), Color(0.025, 0.045, 0.059))
-	draw_colored_polygon(PackedVector2Array([Vector2(2.0, 8.0), Vector2(8.0, 6.0), Vector2(10.0, 11.0), Vector2(7.0, 15.0), Vector2(2.0, 14.0)]), Color(0.025, 0.045, 0.059))
+	var stride := sin(animation_clock * 14.0) * 3.8 if velocity.length_squared() > 20.0 and dodge_left <= 0.0 else 0.0
+	var left_step := stride
+	var right_step := -stride
+	draw_colored_polygon(PackedVector2Array([Vector2(-8.0, 7.0 + left_step), Vector2(-2.0, 8.0 + left_step), Vector2(-3.0, 14.0 + left_step), Vector2(-8.0, 15.0 + left_step), Vector2(-10.0, 12.0 + left_step)]), Color(0.025, 0.045, 0.059))
+	draw_colored_polygon(PackedVector2Array([Vector2(2.0, 8.0 + right_step), Vector2(8.0, 6.0 + right_step), Vector2(10.0, 11.0 + right_step), Vector2(7.0, 15.0 + right_step), Vector2(2.0, 14.0 + right_step)]), Color(0.025, 0.045, 0.059))
 	draw_line(Vector2(-6.0, 2.0), Vector2(5.0, 0.0), Color(0.90, 0.63, 0.28), 2.3)
 	draw_colored_polygon(PackedVector2Array([Vector2(-10.0, -8.0), Vector2(-7.0, -12.0), Vector2(-3.0, -10.0), Vector2(-4.0, -5.0), Vector2(-8.0, -4.0)]), Color(0.62, 0.46, 0.25))
 	draw_colored_polygon(PackedVector2Array([Vector2(4.0, -11.0), Vector2(8.0, -12.0), Vector2(11.0, -8.0), Vector2(8.0, -4.0), Vector2(4.0, -6.0)]), Color(0.68, 0.52, 0.29))
