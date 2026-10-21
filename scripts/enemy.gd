@@ -1,5 +1,13 @@
 extends CharacterBody2D
 
+const ENEMY_SPRITES: Dictionary = {
+	"shade": preload("res://assets/art/enemy_shade.svg"),
+	"stalker": preload("res://assets/art/enemy_stalker.svg"),
+	"guardian": preload("res://assets/art/enemy_guardian.svg"),
+	"elite": preload("res://assets/art/enemy_elite.svg"),
+	"boss": preload("res://assets/art/enemy_boss.svg")
+}
+
 var enemy_kind: String = "shade"
 var max_health: float = 34.0
 var health: float = 34.0
@@ -28,17 +36,7 @@ func _refresh_sprite() -> void:
 	if is_instance_valid(visual_sprite):
 		visual_sprite.queue_free()
 	visual_sprite = Sprite2D.new()
-	var sprite_path := "res://assets/art/enemy_shade.svg"
-	match enemy_kind:
-		"stalker":
-			sprite_path = "res://assets/art/enemy_stalker.svg"
-		"guardian":
-			sprite_path = "res://assets/art/enemy_guardian.svg"
-		"elite":
-			sprite_path = "res://assets/art/enemy_elite.svg"
-		"boss":
-			sprite_path = "res://assets/art/enemy_boss.svg"
-	visual_sprite.texture = load(sprite_path) as Texture2D
+	visual_sprite.texture = ENEMY_SPRITES.get(enemy_kind, ENEMY_SPRITES["shade"]) as Texture2D
 	visual_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	visual_sprite.show_behind_parent = true
 	var sprite_scale := 0.82
