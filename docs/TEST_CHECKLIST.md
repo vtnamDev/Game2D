@@ -18,6 +18,8 @@ Ghi nhận mỗi phiên:
 - [ ] A-01: Import project bằng Godot 4.7.2, không thiếu tài nguyên.
 - [ ] A-02: Main scene chạy không có lỗi parser hoặc tài nguyên.
 - [ ] A-03: Nền đá so le, nhân vật, quái, phù văn và các rào gỗ hiển thị ổn định.
+- [ ] A-09: Tile nền SVG hiển thị trên Android; không còn màn hình nền đen khi bắt đầu hoặc khi di chuyển camera.
+- [ ] A-10: Nền vẫn được vẽ khi texture tile không sẵn sàng, không để lộ clear color tối.
 - [ ] A-07: Camera theo người chơi trên bản đồ lớn mà không lộ khoảng trống ngoài ranh giới.
 - [ ] A-08: Minimap cập nhật vị trí người chơi, quái và chướng ngại khi di chuyển.
 - [ ] A-04: Tiếng Việt hiển thị đúng dấu, không bị ô vuông hoặc cắt chữ.
@@ -31,7 +33,8 @@ Ghi nhận mỗi phiên:
 - [ ] B-03: Giữ joystick và bấm một nút kỹ năng đồng thời hoạt động.
 - [ ] B-04: Chạm nút hành động không gây di chuyển ngoài ý muốn.
 - [ ] B-05: Vùng chết joystick ngăn trôi nhẹ.
-- [ ] B-06: Bảy nút hành động đọc được, đủ vùng chạm và không chồng lấn trên vivo V2120.
+- [ ] B-06: Tám nút hành động đọc được, đủ vùng chạm và không chồng lấn trên vivo V2120.
+- [ ] B-10: Nút Hồi Máu không chồng nhãn/icon và hiển thị rõ trạng thái đủ máu, thiếu nội lực và hồi chiêu.
 - [ ] B-09: Minimap và nút tạm dừng không che nhau hoặc che vùng điều khiển.
 - [ ] B-07: Vòng hồi chiêu và trạng thái thiếu nội lực rõ ràng.
 - [ ] B-08: Nút tạm dừng không bị che bởi phần viền/điều hướng hệ thống.
@@ -59,6 +62,9 @@ Ghi nhận mỗi phiên:
 - [ ] C-19: Lôi Chuỗi chọn tối đa bốn mục tiêu riêng biệt trong tầm và tiêu thụ Kiếm Ấn đúng một lần.
 - [ ] C-20: Hai phép mới không trừ nội lực hoặc bật hồi chiêu khi không có mục tiêu phù hợp.
 - [ ] C-21: Nhân vật và quái không xuyên qua collider của rào gỗ.
+- [ ] C-22: Hồi Máu phục hồi 32 HP, tiêu hao 30 nội lực và hồi chiêu 18 giây.
+- [ ] C-23: Hồi Máu khi máu đầy hoặc thiếu nội lực không tiêu hao tài nguyên/không khởi động hồi chiêu.
+- [ ] C-24: Đấu Sĩ Hạng Nặng và Pháp Sư Tầm Xa có ngoại hình, tầm đánh và thông số khác nhau.
 
 ## D. Tiến trình, nâng cấp và vật phẩm
 
@@ -84,13 +90,13 @@ Ghi nhận mỗi phiên:
 ## F. Hiệu năng trên thiết bị
 
 - [ ] F-01: Ghi FPS/frame time ở đấu trường ít quái.
-- [ ] F-02: Ghi FPS khi có 10, 20 và số quái tối đa.
+- [ ] F-02: Ghi FPS khi có 5, 8 và 10 quái hoạt động.
 - [ ] F-03: Đo giật khung hình trong combo, hiệu ứng diện rộng và nhiều báo đòn đồng thời.
 - [ ] F-04: Chạy tối thiểu 10 phút, ghi bộ nhớ trước/trong/sau.
 - [ ] F-05: Ghi nhiệt độ pin và phần trăm pin đầu/cuối.
 - [ ] F-06: Chơi lặp 10 lượt, ghi crash, treo, lỗi lưu và giật nặng nhất.
 - [ ] F-07: Đo frame time khi camera di chuyển qua các ô nền khác nhau.
-- [ ] F-08: Đo FPS với 8 quái đang hoạt động và khi dùng đồng thời Băng Phong/Lôi Chuỗi.
+- [ ] F-08: Đo FPS với 10 quái đang hoạt động và khi dùng đồng thời Băng Phong/Lôi Chuỗi/Hồi Máu.
 
 Mục tiêu tạm thời: gần 60 FPS ở cảnh nhẹ và ít nhất 30 FPS khi tải cao. Chưa có phép đo nào được xem là đạt.
 
