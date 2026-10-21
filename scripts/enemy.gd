@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-remove fragile enemy SVG tablevar enemy_kind: String = "shade"
+var enemy_kind: String = "shade"
 var max_health: float = 34.0
 var health: float = 34.0
 var move_speed: float = 38.0
@@ -252,7 +252,7 @@ func _draw_enemy_body(bob: float) -> void:
 				Vector2(-12.0, -8.0), Vector2(-5.0, -14.0), Vector2(7.0, -13.0),
 				Vector2(13.0, -5.0), Vector2(10.0, 7.0), Vector2(0.0, 12.0),
 				Vector2(-11.0, 6.0)
-			]), Color(0.09, 16.0 / 100.0, 0.22))
+			]), Color(0.09, 0.16, 0.22))
 			draw_line(Vector2(-9.0, -4.0), Vector2(9.0, -4.0), light_color, 2.4)
 			draw_line(Vector2(-7.0, 3.0), Vector2(7.0, 3.0), Color(0.43, 0.65, 0.72), 2.0)
 		"elite":
