@@ -186,7 +186,8 @@ func _setup_wood_obstacles() -> void:
 	for layout in layouts:
 		var obstacle: Variant = StaticBody2D.new()
 		obstacle.set_script(WoodObstacleScript)
-		obstacle.position = WORLD_SIZE * (layout["point"] as Vector2)
+		var world_point: Vector2 = layout["point"]
+		obstacle.position = WORLD_SIZE * world_point
 		obstacle.rotation = float(layout["angle"])
 		obstacle.configure(float(layout["length"]), 22.0)
 		actors.add_child(obstacle)
@@ -426,14 +427,14 @@ func _on_lightning_pressed() -> void:
 		total_damage += damage
 		current_position = nearest.position
 	if hit_enemies.is_empty():
-		player.restore_energy(ICE_ENERGY_COST * 0.25)
+		player.restore_energy(LIGHTNING_ENERGY_COST)
 		_set_message("LÔI CHUỖI KHÔNG TÌM THẤY MỤC TIÊU", 0.8)
 		return
 	var effect: Variant = Node2D.new()
 	effect.set_script(LightningEffectScript)
 	effect.points = chain_points
 	actors.add_child(effect)
-	player.play_action("lightning")
+	player.play_action("lightning", chain_points[1])
 	_set_message("LÔI CHUỖI — %d MỤC TIÊU • %.0f SÁT THƯƠNG" % [hit_enemies.size(), total_damage], 1.1)
 
 
