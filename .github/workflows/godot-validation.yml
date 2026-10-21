@@ -1,0 +1,72 @@
+name: Godot validation
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download official Godot 4.7.2 standard editor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" \
+            --output /tmp/godot.zip
+          mkdir -p /tmp/godot
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          GODOT_BIN="$(find /tmp/godot -type f -name 'Godot_v4.7.2-stable_linux.x86_64' | head -n 1)"
+          test -n "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+
+      - name: Import and parse project
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --editor --path . --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-import.log; then
+            echo "::error::Godot reported parser/runtime errors during project import."
+            exit 1
+          fi
+
+      - name: Run combat-rule tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s "$GODOT_BIN" --headless --path . --script res://tests/test_combat_rules.gd 2>&1 | tee /tmp/godot-tests.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-tests.log; then
+            echo "::error::Godot reported test errors."
+            exit 1
+          fi
+          grep -F 'PASS: combat rules tests' /tmp/godot-tests.log
+
+      - name: Run scene integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s "$GODOT_BIN" --headless --path . --script res://tests/test_scene_integration.gd 2>&1 | tee /tmp/godot-integration.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-integration.log; then
+            echo "::error::Godot reported integration-test errors."
+            exit 1
+          fi
+          grep -F 'PASS: scene integration tests' /tmp/godot-integration.log
+
+      - name: Smoke-test the main scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --quit-after 5 2>&1 | tee /tmp/godot-smoke.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-smoke.log; then
+            echo "::error::Godot reported errors during main-scene startup."
+            exit 1
+          fi

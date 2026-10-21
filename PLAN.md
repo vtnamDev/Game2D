@@ -1,174 +1,117 @@
-# Game2D — Pixel Survival (MVP Plan)
+# Game2D — v0.1 development plan and acceptance contract
 
-> Status: planning only. This document is the agreed starting plan, not a claim that the game has already been implemented or tested.
->
-> Working assumption: “fixes 2D” means a **pixel-art 2D game**. To keep the first release achievable on Android ARMv7/32-bit, the proposed MVP is a top-down arena-survival game. The title and genre can still be changed before implementation.
+**Status:** first combat prototype is in a draft pull request. Headless Godot 4.7.2 CI passed for the latest observed gameplay-code commit; device acceptance and Android APK export remain pending.
 
-## 1. Goal
+## 1. Confirmed decisions
 
-Create a small but polished, original 2D mobile game with Godot, editable on Android, stored in this GitHub repository, and designed for a low-end 32-bit Android target. Keep the first version offline and avoid paid services, accounts, networking, native plugins, and complex build dependencies.
+- Engine: Godot 4.7.2 Stable.
+- Script: GDScript only. No C#/.NET.
+- Game: 2D top-down fantasy arena survival, pixel-art direction, placeholder art first.
+- Target device: vivo V2120, Android 12. This is the only device included in v0.1 acceptance.
+- Orientation: landscape.
+- Controls: virtual joystick on the left; melee, ranged, and dodge buttons on the right.
+- Ranged targeting: on each shot press, choose the nearest alive enemy within range. If none is valid, do not create a projectile.
+- Signature mechanic A+B: melee marks an enemy; a ranged hit on a marked enemy triggers an elemental combo. Dodging during an enemy attack telegraph can interrupt it and trigger a counterattack.
+- A run lasts 300 seconds. Survive through 300 seconds to win; health reaching zero first means loss.
+- Level-up pauses the simulation and presents three upgrades; exactly one is applied.
+- Runs award local crystals; a permanent unlock can be purchased using crystals.
+- No mandatory Internet, login, server, ads, or in-app purchases in v0.1.
+- Project first; APK only after the toolchain and project are verified.
+- GitHub Actions/cloud build may be used. No desktop PC, root, or native plugin is assumed.
 
-Target workflow:
-1. ChatGPT prepares and reviews project files.
-2. Commit the source to this repository.
-3. Download the repository ZIP on the phone.
-4. Extract it and import the folder containing `project.godot` into Godot Android.
-5. Run the project in the editor and test it on the device.
-6. Only after the game passes testing, attempt APK export and verify installation.
+## 2. Assumptions for the first prototype
 
-## 2. Proposed game concept
+These are changeable implementation defaults, not separate user-approved design commitments:
 
-**Working title:** Pixel Survival: Last Stand  
-**Genre:** Portrait, top-down, wave-based arena survival  
-**Art direction:** Original pixel art with a limited palette, readable silhouettes, layered backgrounds, punchy hit effects, and clear UI. Do not copy Free Fire characters, logos, skins, music, or other protected assets.
+- One playable character, one basic enemy type, one compact arena.
+- One elemental mark and one combo reaction.
+- A marked enemy takes normal projectile damage plus a fixed combo bonus.
+- Enemy attacks use a visible wind-up ring so timing is learnable on a touchscreen.
+- Temporary custom-drawn shapes are used instead of artwork until control feel and combat logic work.
+- Initial numerical settings (attack range, mark duration, dodge window, enemy speed/health, spawn interval, combo damage) are tuning variables. They must be checked on device and may change.
+- A small local save records crystals and the permanent Counter Relic unlock.
 
-### Core gameplay loop
-- The player moves around a compact arena using a virtual touch joystick.
-- The character automatically targets the nearest enemy and fires, reducing the number of simultaneous touch actions.
-- Enemies spawn in waves and pursue the player.
-- Defeated enemies drop experience. Leveling up pauses the action and offers one of three upgrades.
-- Survive for a short run (initial target: 5 minutes), then show score, time survived, and a restart button.
-- Store best score and basic settings locally.
+## 3. Implemented candidate behavior on the prototype branch
 
-### MVP scope
-- Main menu with Play, Settings, and Exit.
-- One arena and one playable character.
-- Three enemy variants with distinct speed/health values.
-- One basic weapon, three upgrade types, and a simple level-up selection panel.
-- Player health, invulnerability blink after taking damage, score, timer, and game-over screen.
-- Touch controls, pause/resume, restart, sound/music toggles, and local best-score save.
-- Placeholder assets are acceptable while functionality is built; replace them with original pixel-art assets during polish.
+The code on \`prototype/m1-combat\` currently includes:
 
-### Explicitly out of scope for version 0.1
-- Online multiplayer, accounts, cloud saves, chat, large open world, 3D models, gacha, in-app purchases, ads, leaderboards, and third-party native plugins.
-- These add complexity and can jeopardize Android ARM32 compatibility. Reconsider monetization only after the core game is stable and fun.
+1. Menu and start/restart flow.
+2. Landscape arena drawn with simple shapes.
+3. CharacterBody2D player/enemies with circular collision shapes.
+4. Touch joystick with dead zone and multi-pointer input, plus three action buttons.
+5. Melee damage and an Ember Mark.
+6. One target-seeking projectile per valid shoot action, using the nearest valid target.
+7. No projectile and no shot cooldown when no valid target exists.
+8. Projectile hit on a marked enemy consumes the mark and adds combo damage.
+9. Enemy telegraph, dodge invulnerability, and counterattack on a dodge during a nearby telegraph.
+10. XP, a level-up screen with three choices, and paused combat until selection.
+11. 300-second win / zero-health loss and once-per-run crystal rewards.
+12. Local save for crystals and a permanent Counter Relic unlock.
+13. Combat-rule tests for nearest target, range/dead-target rejection, combo damage and reward calculations.
+14. Scene integration tests for no-target shooting, melee-mark/ranged-combo, perfect-dodge counter, level-up pause/resume and one-time reward payment.
+15. GitHub Actions checks for Godot 4.7.2 import/parse, both test scripts, and main-scene startup.
 
-## 3. Technical decisions
+The latest observed successful CI run is [here](https://github.com/vtnamDev/Game2D/actions/runs/39566039133) for gameplay-code commit \`537c8e8\`. This is a headless Linux result—not device or APK acceptance. Check the Actions page for subsequent commits.
 
-- **Engine:** Godot 4.x stable Android editor build; prefer a version that can be installed and opened on the target device.
-- **Script:** GDScript only; no C#/.NET.
-- **Renderer:** Compatibility / OpenGL ES 3, subject to confirming that the device GPU and driver support it.
-- **Target architecture:** Keep the exported Android package compatible with ARMv7/armeabi-v7a. The architecture of the editor APK and the architecture of the exported game are separate checks.
-- **Orientation:** Portrait.
-- **Reference viewport:** Start at 360 × 640 logical pixels, with a stretch/expand strategy tested against tall phone screens. UI must use anchors and containers instead of hard-coded screen coordinates.
-- **Art:** Pixel textures with nearest filtering, sprite sheets/atlases, limited animation frames, no giant uncompressed textures, and original/licensed assets only.
-- **Storage:** Local save under `user://`; no personal data collection.
-- **Dependencies:** Prefer built-in Godot nodes and GDScript. Do not require C#, Gradle-only Android plugins, GDExtensions, shell permissions, or root.
+## 4. Acceptance gates
 
-## 4. Performance budget (targets to validate, not guarantees)
+### Gate A — source integrity and headless startup
+- \`project.godot\` and the main scene exist at the repository root/declared path.
+- All script and scene references resolve.
+- Godot 4.7.2 headless import and main-scene startup pass.
+- Combat-rule and scene integration tests pass.
+- No engine output with a script parser error or missing resource.
 
-- Aim for stable 60 FPS on the target phone; ensure the game remains playable if performance falls to 30 FPS.
-- Start with no more than about 40 active enemies on screen; profile before increasing this.
-- Reuse bullets, enemies, XP drops, and hit effects with object pooling when profiling shows node churn.
-- Keep physics and AI updates simple; use squared-distance checks where appropriate and avoid expensive work in every frame.
-- Use a small number of shared materials and sprite atlases; limit translucent particles and full-screen effects.
-- Keep audio assets short and compressed. Set a practical initial download-size target below 50 MB, then measure the real build.
-- Measure CPU/GPU load, memory, temperature, frame pacing, and battery drain during a 10-minute session. Reduce effects or entity counts if the phone heats or stutters.
+### Gate B — controls and combat on vivo V2120
+- Landscape layout remains usable on the actual screen.
+- Joystick returns to neutral on release; simultaneous joystick and button input works.
+- Melee only hits in range and applies a mark.
+- The nearest living target in range is chosen; no valid target means no shot.
+- Marked projectile hit consumes the mark and applies bonus damage exactly once.
+- Dodge outside a telegraph is a normal dodge. Dodge during a nearby telegraph cancels the attack and applies one counter.
+- Pause and upgrade selection genuinely pause the simulation.
+- No controls overlap each other or the gameplay-critical UI.
 
-## 5. Repository structure planned
+### Gate C — complete run and persistent progression
+- A run starts at 300 seconds and can end in either win or loss.
+- The level-up screen offers three choices, applies one, then resumes the run.
+- Rewards are issued at most once per run.
+- The crystal count and Counter Relic unlock survive application restart.
+- Restart resets run state but retains permanent progression.
+- Offline play works.
 
-```text
-Game2D/
-├── project.godot
-├── README.md
-├── PLAN.md
-├── scenes/
-│   ├── main.tscn
-│   ├── menu.tscn
-│   ├── arena.tscn
-│   ├── player.tscn
-│   ├── enemy.tscn
-│   ├── hud.tscn
-│   ├── upgrade_picker.tscn
-│   └── game_over.tscn
-├── scripts/
-│   ├── game_manager.gd
-│   ├── player.gd
-│   ├── enemy.gd
-│   ├── spawner.gd
-│   ├── weapon.gd
-│   ├── upgrade_system.gd
-│   ├── touch_joystick.gd
-│   └── save_manager.gd
-├── assets/
-│   ├── sprites/
-│   ├── ui/
-│   └── audio/
-└── docs/
-    └── TEST_CHECKLIST.md
-```
+### Gate D — stability and performance
+- Run ten manual attempts with no crash or progression-blocking issue.
+- Complete one ten-minute session without unexplained memory growth or severe thermal/stutter symptoms.
+- FPS and frame-time behavior are measured both in a quiet arena and at maximum tested enemy load.
+- Initial target: 60 FPS when lightly loaded; under stress, keep the game playable and aim for at least 30 FPS. These are targets to measure, not guarantees.
+- Record device temperature, battery level, memory, enemy count, renderer and resolution with the measurements.
+- No arbitrary APK size or latency threshold is claimed until measured.
 
-Do not create empty scene/resource references that make Godot report missing files. Build in small, importable increments.
+### Gate E — Android export
+- Confirm export templates and Android export behavior for the installed Godot 4.7.2 editor.
+- If cloud building is needed, confirm the job uses a compatible official engine/template and correct Android ABI configuration.
+- Install and launch a real generated APK on vivo V2120.
+- Verify ARMv7/armeabi-v7a compatibility from the actual artifact; do not infer it from the Android editor APK's ABI.
+- Save the export log, APK metadata, commit SHA, install result and smoke-test result.
 
-## 6. Milestones
+## 5. Sequence and stop conditions
 
-### M0 — Verify the toolchain
-- Install the official Godot Android `arm32` editor build.
-- Confirm it opens a blank project, can access Downloads/Documents, and can import a ZIP.
-- Verify the device supports the required OpenGL ES version.
-- Check available RAM and free storage before adding art.
-- Confirm the installed Godot version; do not generate a project configuration blindly for an unknown major/minor version.
+1. Review this branch and run the automated Godot checks.
+2. Fix every parser/import/runtime issue before adding more features.
+3. Import the branch into Godot Android and test controls and A+B in a short session.
+4. Fix the combat feel and touch layout before balancing five-minute difficulty.
+5. Run the complete-loop tests, save/reload tests and ten attempts.
+6. Measure performance; lower enemy cap/effects if necessary.
+7. Only then validate the APK export pipeline.
+8. Add original/AI/licensed artwork and audio after the gray-box experience passes.
 
-**Exit criterion:** a blank project can be created or imported and run.
+Stop feature work if an error prevents starting or finishing a run. Do not mask a failed test by editing the checklist to "pass"; save the error and fix the underlying cause.
 
-### M1 — Playable gray-box
-- Create `project.godot`, main scene, arena bounds, player movement, enemies, collision, health, and restart.
-- Use simple colored shapes before adding art.
-- Verify there are no missing scripts, invalid scene paths, parser errors, or crashes.
+## 6. Known risks
 
-**Exit criterion:** the player can move, enemies chase and damage the player, and game over/restart work.
-
-### M2 — Core game loop
-- Add automatic weapon targeting, enemy waves, XP drops, level-up choices, timer, score, and local save.
-- Add pause/resume and touch-friendly UI.
-- Test edge cases: no enemies, simultaneous hits, level-up while near death, pause during upgrade, repeated restart.
-
-**Exit criterion:** a complete 5-minute run can start, progress, end, and restart.
-
-### M3 — Pixel-art and polish
-- Add a consistent sprite palette, short animation cycles, layered arena, clean HUD, hit feedback, and restrained particles.
-- Add sound effects and music with mute controls.
-- Check text readability and all UI anchors in different aspect ratios.
-
-**Exit criterion:** the game is visually cohesive without compromising readability or performance.
-
-### M4 — Android performance and compatibility
-- Import and run on the actual phone.
-- Check frame pacing, memory, heat, audio, touch input, pause/resume after app backgrounding, and storage persistence.
-- Remove any dependency that fails in the Android editor.
-- Keep a minimal build if the device struggles; do not claim ARMv7 support until the exported APK is verified.
-
-**Exit criterion:** no known blocking issue during repeated test runs; performance target is measured and recorded.
-
-### M5 — Export and release preparation
-- Install matching export templates if required and use the export path supported by the installed Android editor version.
-- If APK export is unavailable or fails, record the exact error before choosing a cloud-build alternative; do not pretend a GitHub upload itself creates an APK.
-- Verify the APK package ABI, install it, launch it, test fresh install/update behaviour, and record the result.
-- Prepare app icon, screenshots, privacy disclosure, credits/licenses, version number, and a reproducible release checklist.
-
-**Exit criterion:** a real APK installs and runs on the target phone. Store publishing and monetization are later phases.
-
-## 7. Testing checklist
-
-- [ ] Project imports from GitHub ZIP with `project.godot` at the project root.
-- [ ] Main scene opens without missing resources or script errors.
-- [ ] Touch movement works on the actual phone.
-- [ ] Collision, health, enemy AI, XP, upgrade choices, pause, game over, and restart work.
-- [ ] Settings and high score persist after app restart.
-- [ ] A 10-minute run does not show unacceptable stutter, overheating, or memory growth.
-- [ ] App can resume after being minimized.
-- [ ] Exported APK is confirmed compatible with ARMv7/armeabi-v7a and installs on the phone.
-- [ ] All art/audio has clear usage rights; repository contains no access tokens or private keys.
-
-## 8. Risks and honest limits
-
-- The Godot Android editor is less comfortable on a small touchscreen than desktop, so project files should remain small and easy to inspect.
-- The editor's exact export capabilities depend on the installed Godot version and available templates/tools. Importing a project is not the same as successfully exporting an APK.
-- A code review can catch many likely issues, but only running the project in Godot and installing the APK can verify the target-device result.
-- Android ARM32 devices vary in GPU drivers, memory, and ABI support. Performance settings must be verified on the actual phone.
-
-## 9. Immediate next actions
-
-1. Confirm the intended meaning of “fixes 2D”; this plan assumes **pixel-art 2D**.
-2. Check Godot version, OpenGL ES capability, available RAM, and storage on the phone.
-3. Implement M1 first; do not add monetization, large art packs, or complex effects before the playable loop is stable.
+- Godot 4.7.2 headless CI has passed on the latest observed gameplay-code commit, but touch behavior, visual layout, device performance, saving on process death and APK export are not yet verified.
+- Android editor and APK export are separate workflows. The export templates and ABI must be verified independently.
+- The target device's measured FPS, available memory under load, thermals, input latency and APK export capability are unknown.
+- A telegraph-based perfect dodge may be too easy or too difficult; the window and distance must be tuned by playtesting.
+- The first build uses a deliberately small enemy set. Multiple enemy archetypes, maps, deep skill trees, audio polish and store release are not first-gate requirements.
