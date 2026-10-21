@@ -17,6 +17,42 @@ var alive: bool = true
 var animation_clock: float = 0.0
 var hurt_flash_left: float = 0.0
 var knockback_velocity: Vector2 = Vector2.ZERO
+var visual_sprite: Sprite2D
+
+
+func _ready() -> void:
+	_refresh_sprite()
+
+
+func _refresh_sprite() -> void:
+	if is_instance_valid(visual_sprite):
+		visual_sprite.queue_free()
+	visual_sprite = Sprite2D.new()
+	var sprite_path := "res://assets/art/enemy_shade.svg"
+	match enemy_kind:
+		"stalker":
+			sprite_path = "res://assets/art/enemy_stalker.svg"
+		"guardian":
+			sprite_path = "res://assets/art/enemy_guardian.svg"
+		"elite":
+			sprite_path = "res://assets/art/enemy_elite.svg"
+		"boss":
+			sprite_path = "res://assets/art/enemy_boss.svg"
+	visual_sprite.texture = load(sprite_path) as Texture2D
+	visual_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	visual_sprite.show_behind_parent = true
+	var sprite_scale := 0.82
+	match enemy_kind:
+		"stalker":
+			sprite_scale = 0.78
+		"guardian":
+			sprite_scale = 0.88
+		"elite":
+			sprite_scale = 0.91
+		"boss":
+			sprite_scale = 1.05
+	visual_sprite.scale = Vector2.ONE * sprite_scale
+	add_child(visual_sprite)
 
 
 func configure_kind(next_kind: String, difficulty: float) -> void:
@@ -73,11 +109,21 @@ func configure_kind(next_kind: String, difficulty: float) -> void:
 	move_speed += clampf(difficulty, 0.0, 1.0) * 5.0
 	health = max_health
 	attack_cooldown_left = randf_range(0.25, 0.75)
+	if is_instance_valid(visual_sprite):
+		_refresh_sprite()
 
 
 func tick(delta: float, player_position: Vector2) -> bool:
 	animation_clock += delta
 	hurt_flash_left = maxf(0.0, hurt_flash_left - delta)
+	if is_instance_valid(visual_sprite):
+		visual_sprite.position.y = sin(animation_clock * (6.0 if enemy_kind == "stalker" else 3.0)) * (1.1 if enemy_kind != "boss" else 0.5)
+		if hurt_flash_left > 0.0:
+			visual_sprite.modulate = Color(1.0, 0.55, 0.55, 1.0)
+		elif windup_left > 0.0:
+			visual_sprite.modulate = Color(1.0, 0.78, 0.68, 1.0)
+		else:
+			visual_sprite.modulate = Color.WHITE
 	marked_time = maxf(0.0, marked_time - delta)
 	attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
 	if not alive:
@@ -150,42 +196,10 @@ func take_damage(amount: float) -> bool:
 
 
 func _draw() -> void:
-	var bob := sin(animation_clock * (6.4 if enemy_kind == "stalker" else 3.6)) * (1.2 if enemy_kind != "boss" else 0.6)
 	var is_boss := enemy_kind == "boss"
-	var body_size := 15.0 * visual_scale
-	var dark := Color(0.17, 0.055, 0.10)
-	var mid := Color(0.58, 0.13, 0.18)
-	var light := Color(0.91, 0.28, 0.25)
-	var highlight := Color(1.0, 0.65, 0.35)
-
-	match enemy_kind:
-		"stalker":
-			dark = Color(0.08, 0.055, 0.15)
-			mid = Color(0.31, 0.19, 0.45)
-			light = Color(0.68, 0.37, 0.78)
-			highlight = Color(0.45, 0.95, 1.0)
-		"guardian":
-			dark = Color(0.12, 0.11, 0.08)
-			mid = Color(0.40, 0.31, 0.19)
-			light = Color(0.70, 0.53, 0.29)
-			highlight = Color(1.0, 0.83, 0.50)
-		"elite":
-			dark = Color(0.10, 0.025, 0.08)
-			mid = Color(0.47, 0.09, 0.27)
-			light = Color(0.90, 0.20, 0.40)
-			highlight = Color(1.0, 0.66, 0.36)
-		"boss":
-			dark = Color(0.035, 0.024, 0.06)
-			mid = Color(0.23, 0.055, 0.12)
-			light = Color(0.61, 0.09, 0.18)
-			highlight = Color(1.0, 0.35, 0.20)
-	if hurt_flash_left > 0.0:
-		mid = Color(1.0, 0.83, 0.72)
-		light = Color(1.0, 0.98, 0.85)
-
-	# Ground shadow is an ellipse, not a flat outline.
-	draw_set_transform(Vector2(1.0, 6.0 + bob), 0.0, Vector2(1.5 * visual_scale, 0.55 * visual_scale))
-	draw_circle(Vector2.ZERO, body_size, Color(0.005, 0.01, 0.018, 0.62))
+	var bob := sin(animation_clock * 3.0) * 0.7
+	draw_set_transform(Vector2(1.0, 6.0 + bob), 0.0, Vector2(1.4 * visual_scale, 0.52 * visual_scale))
+	draw_circle(Vector2.ZERO, 14.0, Color(0.003, 0.008, 0.016, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	if enemy_kind == "elite" or is_boss:
@@ -198,77 +212,22 @@ func _draw() -> void:
 		var warning_color := Color(1.0, 0.26, 0.20, 0.65 + 0.3 * (1.0 - ratio))
 		draw_arc(Vector2.ZERO, attack_range + 10.0, 0.0, TAU, 48, warning_color, 3.0)
 		draw_arc(Vector2.ZERO, attack_range + 4.0, -PI * 0.7, PI * 0.7, 36, Color(1.0, 0.77, 0.29, 0.55), 1.5)
-
-	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2(visual_scale, visual_scale))
-	if is_boss:
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-23.0, -13.0), Vector2(-29.0, -28.0), Vector2(-12.0, -21.0),
-			Vector2(-7.0, -34.0), Vector2(4.0, -25.0), Vector2(19.0, -30.0),
-			Vector2(23.0, -12.0), Vector2(28.0, 8.0), Vector2(14.0, 23.0),
-			Vector2(-14.0, 22.0), Vector2(-28.0, 6.0)
-		]), dark)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-20.0, -12.0), Vector2(-18.0, -24.0), Vector2(-7.0, -18.0),
-			Vector2(2.0, -28.0), Vector2(15.0, -19.0), Vector2(20.0, -9.0),
-			Vector2(21.0, 8.0), Vector2(9.0, 19.0), Vector2(-12.0, 18.0),
-			Vector2(-22.0, 4.0)
-		]), mid)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-12.0, -6.0), Vector2(-5.0, -12.0), Vector2(2.0, -6.0),
-			Vector2(11.0, -9.0), Vector2(15.0, 3.0), Vector2(7.0, 12.0),
-			Vector2(-7.0, 11.0), Vector2(-14.0, 2.0)
-		]), light)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-19.0, -12.0), Vector2(-24.0, -26.0), Vector2(-12.0, -18.0),
-			Vector2(-7.0, -23.0), Vector2(-9.0, -10.0)
-		]), highlight)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(13.0, -12.0), Vector2(23.0, -25.0), Vector2(22.0, -9.0),
-			Vector2(12.0, -5.0)
-		]), highlight)
-	else:
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-13.0, -7.0), Vector2(-17.0, -17.0), Vector2(-7.0, -12.0),
-			Vector2(0.0, -20.0), Vector2(8.0, -12.0), Vector2(16.0, -17.0),
-			Vector2(14.0, -5.0), Vector2(15.0, 8.0), Vector2(5.0, 14.0),
-			Vector2(-7.0, 13.0), Vector2(-16.0, 5.0)
-		]), dark)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-11.0, -7.0), Vector2(-11.0, -13.0), Vector2(-3.0, -10.0),
-			Vector2(1.0, -15.0), Vector2(8.0, -10.0), Vector2(12.0, -12.0),
-			Vector2(11.0, 4.0), Vector2(5.0, 11.0), Vector2(-6.0, 10.0),
-			Vector2(-12.0, 3.0)
-		]), mid)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-8.0, -3.0), Vector2(-4.0, -8.0), Vector2(0.0, -6.0),
-			Vector2(6.0, -8.0), Vector2(9.0, -1.0), Vector2(6.0, 5.0),
-			Vector2(-5.0, 5.0)
-		]), light)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(-12.0, -7.0), Vector2(-16.0, -18.0), Vector2(-5.0, -11.0)
-		]), highlight)
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(7.0, -11.0), Vector2(16.0, -18.0), Vector2(13.0, -6.0)
-		]), highlight)
-
-	var eye_color := Color(1.0, 0.87, 0.48) if enemy_kind != "stalker" else Color(0.40, 1.0, 1.0)
-	draw_rect(Rect2(-7.0, -1.0, 4.0, 3.0), eye_color, true)
-	draw_rect(Rect2(3.0, -1.0, 4.0, 3.0), eye_color, true)
-	draw_line(Vector2(-5.0, 5.0), Vector2(5.0, 5.0), Color(0.12, 0.035, 0.055), 1.5)
+		if is_boss:
+			draw_arc(Vector2.ZERO, attack_range + 20.0, PI * 0.1, PI * 1.9, 48, Color(1.0, 0.19, 0.16, 0.35), 4.0)
 
 	if marked_time > 0.0:
 		draw_colored_polygon(PackedVector2Array([
-			Vector2(0.0, -29.0), Vector2(6.0, -23.0), Vector2(0.0, -17.0), Vector2(-6.0, -23.0)
+			Vector2(0.0, -28.0), Vector2(6.0, -22.0), Vector2(0.0, -16.0), Vector2(-6.0, -22.0)
 		]), Color(1.0, 0.72, 0.22))
-		draw_arc(Vector2.ZERO, 25.0, 0.0, TAU, 28, Color(1.0, 0.56, 0.16, 0.85), 1.8)
+		draw_arc(Vector2.ZERO, 24.0 * visual_scale, 0.0, TAU, 28, Color(1.0, 0.56, 0.16, 0.75), 1.6)
 
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var bar_width := 34.0 * visual_scale
-	var bar_y := -31.0 * visual_scale
+	var bar_y := -27.0 * visual_scale
 	if is_boss:
-		bar_width = 72.0
-		bar_y = -72.0
-	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width, 4.0 * visual_scale)), Color(0.035, 0.025, 0.04, 0.92), true)
-	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width * clampf(health / maxf(1.0, max_health), 0.0, 1.0), 4.0 * visual_scale)), Color(0.96, 0.28, 0.25), true)
+		bar_width = 76.0
+		bar_y = -57.0
+	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width, 5.0)), Color(0.015, 0.02, 0.035, 0.95), true)
+	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width * clampf(health / maxf(1.0, max_health), 0.0, 1.0), 5.0)), Color(0.96, 0.26, 0.25), true)
+	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width * clampf(health / maxf(1.0, max_health), 0.0, 1.0), 1.5)), Color(1.0, 0.66, 0.55, 0.9), true)
 	if is_boss:
-		draw_rect(Rect2(Vector2(-38.0, bar_y - 4.0), Vector2(76.0, 2.0)), Color(1.0, 0.61, 0.25, 0.8), true)
+		draw_rect(Rect2(Vector2(-40.0, bar_y - 4.0), Vector2(80.0, 2.0)), Color(1.0, 0.61, 0.25, 0.8), true)
