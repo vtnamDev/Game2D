@@ -449,11 +449,12 @@ func _tick_pickups(delta: float) -> void:
 		if distance < 112.0 and distance > 0.01:
 			pickup.position += to_player / distance * minf(260.0 * delta, distance)
 		if distance < 23.0:
-			crystals += int(pickup.amount)
+			var picked_amount: int = int(pickup.amount)
+			crystals += picked_amount
 			pickups.erase(pickup)
 			pickup.queue_free()
 			_save_progress()
-			_set_message("NHẶT ĐƯỢC %d TINH THẠCH" % int(pickup.amount), 0.8)
+			_set_message("NHẶT ĐƯỢC %d TINH THẠCH" % picked_amount, 0.8)
 
 
 func _alive_boss() -> Variant:
