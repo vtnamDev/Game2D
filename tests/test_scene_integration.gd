@@ -20,6 +20,37 @@ func _run() -> void:
 		return
 	if not _check(is_instance_valid(main.player), "A player should be created at run start."):
 		return
+	if not _check(is_equal_approx(main.player.energy, 100.0), "Player energy should start full."):
+		return
+
+	# An unaffordable skill must not silently consume resources or start cooldown.
+	main.player.energy = 10.0
+	main._on_skill_pressed()
+	if not _check(is_equal_approx(main.player.energy, 10.0), "An unaffordable skill must not consume energy."):
+		return
+	if not _check(main.skill_cooldown_left == 0.0, "An unaffordable skill must not enter cooldown."):
+		return
+
+	main.player.energy = 100.0
+	main._on_skill_pressed()
+	if not _check(is_equal_approx(main.player.energy, 68.0), "Phá Trận must consume 32 energy."):
+		return
+	if not _check(main.skill_cooldown_left > 0.0, "Phá Trận must enter cooldown after use."):
+		return
+	main.player.energy = 100.0
+
+	# The ultimate can only fire at full energy and spends the full bar.
+	main.player.energy = 99.0
+	main._on_ultimate_pressed()
+	if not _check(is_equal_approx(main.player.energy, 99.0), "An unavailable ultimate must preserve current energy."):
+		return
+	main.player.energy = 100.0
+	main._on_ultimate_pressed()
+	if not _check(is_equal_approx(main.player.energy, 0.0), "The ultimate must consume all 100 energy."):
+		return
+	if not _check(main.player.invulnerability_left > 0.0, "The ultimate should grant a brief defensive window."):
+		return
+	main.player.energy = 100.0
 
 	# No target must mean no projectile and no shot cooldown.
 	var initial_child_count: int = main.actors.get_child_count()
@@ -28,7 +59,7 @@ func _run() -> void:
 		return
 	if not _check(main.shot_cooldown_left == 0.0, "No-target input must not start shot cooldown."):
 		return
-	if not _check(main.message.contains("No valid target"), "The player should receive no-target feedback."):
+	if not _check(main.message.contains("MỤC TIÊU"), "The player should receive Vietnamese no-target feedback."):
 		return
 
 	# Melee marks a valid nearby enemy; a ranged hit should consume the mark and resolve the combo.
@@ -37,7 +68,7 @@ func _run() -> void:
 	main.enemies.append(marked_enemy)
 	var original_health: float = marked_enemy.health
 	main._on_melee_pressed()
-	if not _check(marked_enemy.marked_time > 0.0, "Melee should apply the Ember Mark."):
+	if not _check(marked_enemy.marked_time > 0.0, "Melee should apply the sword mark."):
 		return
 	if not _check(is_equal_approx(marked_enemy.health, original_health - main.melee_damage), "Melee should apply its base damage."):
 		return
@@ -61,8 +92,11 @@ func _run() -> void:
 		return
 	if not _check(main.player.dodge_cooldown_left > 0.0, "Dodge should enter cooldown."):
 		return
+	if not _check(main.player.energy > 0.0, "A perfect dodge should restore energy."):
+		return
 
-	# Trigger level-up and verify the choice pauses/resumes the game and applies one upgrade.
+	# Make two enemy rewards cross the deliberately slower level-up threshold.
+	main.xp = main.xp_to_next_level - 2
 	var first_upgrade_enemy: CharacterBody2D = _make_enemy(main.player.position + Vector2(80.0, 0.0))
 	main.actors.add_child(first_upgrade_enemy)
 	main.enemies.append(first_upgrade_enemy)
