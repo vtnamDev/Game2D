@@ -91,6 +91,8 @@ func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -
 			action_duration = 0.58
 		"lightning":
 			action_duration = 0.28
+		"heal":
+			action_duration = 0.64
 		"dodge":
 			action_duration = 0.22
 		_:
@@ -157,6 +159,9 @@ func _draw() -> void:
 				body_tilt = sin(action_progress * PI) * 0.18
 			"lightning":
 				body_tilt = -0.08
+			"heal":
+				jump_height = sin(action_progress * PI) * 6.0
+				body_tilt = sin(action_progress * PI) * 0.08
 	if dodge_left > 0.0:
 		jump_height = maxf(jump_height, sin(clampf(dodge_left / 0.22, 0.0, 1.0) * PI) * 8.0)
 		body_stretch = 0.14
@@ -168,7 +173,12 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hero_body(bob, jump_height, body_tilt, body_stretch)
 
-	if action_time > 0.0 and action_name == "ice":
+	if action_time > 0.0 and action_name == "heal":
+		var heal_progress := 1.0 - action_time / action_duration
+		var heal_radius := lerpf(18.0, 43.0, heal_progress)
+		draw_arc(Vector2.ZERO, heal_radius, heal_progress * 0.8, TAU + heal_progress * 0.8, 36, Color(0.36, 1.0, 0.64, 0.84 * (1.0 - heal_progress)), 3.0)
+		draw_arc(Vector2.ZERO, heal_radius * 0.72, 0.0, TAU, 28, Color(0.78, 1.0, 0.80, 0.68 * (1.0 - heal_progress)), 1.6)
+	elif action_time > 0.0 and action_name == "ice":
 		var ice_progress := 1.0 - action_time / action_duration
 		var ice_radius := lerpf(28.0, 188.0, ice_progress)
 		draw_arc(Vector2.ZERO, ice_radius, ice_progress, TAU + ice_progress, 48, Color(0.18, 0.72, 1.0, 0.84 * (1.0 - ice_progress)), 4.0)
