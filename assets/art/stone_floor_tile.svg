@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="72" viewBox="0 0 96 72">
+  <defs>
+    <linearGradient id="stoneA" x1="0" y1="0" x2="0.15" y2="1"><stop offset="0" stop-color="#37474a"/><stop offset="0.17" stop-color="#26363a"/><stop offset="1" stop-color="#1a272b"/></linearGradient>
+    <linearGradient id="stoneB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#303f43"/><stop offset="1" stop-color="#192529"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6e7b70" stop-opacity=".22"/><stop offset=".5" stop-color="#41534f" stop-opacity=".08"/><stop offset="1" stop-color="#040a0e" stop-opacity=".72"/></linearGradient>
+  </defs>
+  <rect width="96" height="72" fill="#111b20"/>
+  <!-- Irregular, interlocking slabs. Edges meet at tile boundaries so the texture can repeat seamlessly. -->
+  <path d="M2 2 L31 1 L34 5 L32 30 L27 34 L2 32 L0 27 L0 7Z" fill="#071014" opacity=".9"/>
+  <path d="M3 1 L31 1 L32 5 L30 28 L26 31 L2 30 L1 26 L1 7Z" fill="url(#stoneA)" stroke="#101a1e" stroke-width="1.5"/>
+  <path d="M7 4 L27 3" stroke="#93a091" stroke-opacity=".18" stroke-width="1.2"/>
+  <path d="M34 1 L64 2 L68 7 L65 31 L61 33 L35 31 L32 26 L33 6Z" fill="#070e12"/>
+  <path d="M35 1 L63 2 L66 7 L63 28 L60 30 L35 29 L33 25 L34 6Z" fill="url(#stoneB)" stroke="#101b20" stroke-width="1.4"/>
+  <path d="M39 4 L57 4 L60 6" fill="none" stroke="#84908a" stroke-opacity=".15"/>
+  <path d="M68 0 L96 0 L96 30 L72 31 L67 27 L68 7Z" fill="#060d11"/>
+  <path d="M70 1 L96 1 L96 28 L73 29 L69 25 L70 7Z" fill="url(#stoneA)" stroke="#101a1e" stroke-width="1.4"/>
+  <path d="M74 4 L91 3" stroke="#a1a28c" stroke-opacity=".14"/>
+  <path d="M0 36 L28 34 L32 39 L31 67 L26 71 L0 70Z" fill="#070f13"/>
+  <path d="M1 37 L27 35 L30 39 L29 65 L25 69 L1 68Z" fill="url(#stoneB)" stroke="#0c171b" stroke-width="1.5"/>
+  <path d="M4 41 L22 40" stroke="#8a988d" stroke-opacity=".13"/>
+  <path d="M34 36 L62 34 L67 39 L65 66 L61 70 L35 68 L32 63 L33 40Z" fill="#070f13"/>
+  <path d="M35 37 L61 35 L65 39 L63 64 L60 68 L36 66 L34 62 L35 40Z" fill="url(#stoneA)" stroke="#101a1e" stroke-width="1.5"/>
+  <path d="M39 40 L54 39" stroke="#a6ac98" stroke-opacity=".17"/>
+  <path d="M69 36 L96 34 L96 69 L72 70 L67 65 L68 40Z" fill="#070e12"/>
+  <path d="M70 37 L96 35 L96 67 L73 68 L69 63 L70 40Z" fill="url(#stoneB)" stroke="#111a1e" stroke-width="1.5"/>
+  <path d="M74 40 L92 39" stroke="#8b9c8f" stroke-opacity=".14"/>
+  <!-- A few mineral flecks, shallow cracks and moss stains; intentionally sparse. -->
+  <path d="M13 13 L16 16 L14 20 L18 23" fill="none" stroke="#0b1618" stroke-width="1.1"/>
+  <path d="M48 15 L45 18 L49 21" fill="none" stroke="#0c1719" stroke-width="1.1"/>
+  <path d="M81 13 L78 16 L82 20" fill="none" stroke="#0a1417" stroke-width="1.1"/>
+  <path d="M13 49 L17 52 L15 55" fill="none" stroke="#0b1618" stroke-width="1.1"/>
+  <path d="M48 48 L46 52 L51 55" fill="none" stroke="#0b1518" stroke-width="1.1"/>
+  <path d="M81 49 L78 52 L82 54" fill="none" stroke="#0a1417" stroke-width="1.1"/>
+  <g fill="#5c7750" opacity=".36"><circle cx="24" cy="18" r="1.2"/><circle cx="58" cy="57" r="1.4"/><circle cx="86" cy="22" r="1.1"/><circle cx="8" cy="62" r="1.0"/><circle cx="43" cy="8" r=".9"/></g>
+  <rect width="96" height="72" fill="url(#edge)" opacity=".55"/>
+</svg>
