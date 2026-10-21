@@ -1,6 +1,6 @@
 # Game2D v0.1 acceptance checklist
 
-**Status at creation:** all manual device checks are pending. Do not mark a test passed until the named action was performed and its evidence recorded.
+**Device validation status:** pending. Headless CI passed for gameplay-code commit \`537c8e8\`; that result does not count as testing the phone. Do not mark a device test passed until the named action was performed and its evidence recorded.
 
 Record for every session:
 - Git commit SHA:
@@ -55,7 +55,7 @@ Record for every session:
 - [ ] D-06: Health reaching zero before 300 seconds results in loss.
 - [ ] D-07: Win and loss screens cannot both be reached for the same run.
 - [ ] D-08: Repeated input cannot issue the run reward twice.
-- [ ] D-09: Counter Relic purchase checks funds, charges once, and remains unlocked after restart.
+- [ ] D-09: Counter Relic purchase checks funds, charges once and remains unlocked after restart.
 - [ ] D-10: Restart resets run timer, health, XP, kills, temporary upgrades and enemies.
 
 ## E. Offline save and lifecycle
@@ -84,13 +84,14 @@ Provisional targets: aim at 60 FPS in light load and at least 30 FPS during stre
 - [ ] G-03: Inspect package ABI; verify ARMv7/armeabi-v7a if it is the required build.
 - [ ] G-04: Install and launch the actual APK on vivo V2120.
 - [ ] G-05: Run B, C, D and E checks against the APK, not only the editor.
-- [ ] G-06: Attach export log, artifact metadata, commit SHA and install result.
+- [ ] G-06: Attach export log, artifact metadata, commit SHA, install result and smoke-test result.
 
 ## Automated checks
 
-The GitHub Actions workflow is intended to:
-1. Import/parse the project headlessly using official Godot 4.7.2.
-2. Run tests/test_combat_rules.gd.
-3. Start the main scene briefly to catch startup errors.
+The GitHub Actions workflow uses the official Godot 4.7.2 Linux editor and performs:
+1. Headless project import/parse, with log scanning for parser/runtime errors.
+2. Combat-rule tests.
+3. Scene integration tests for no-target shooting, melee mark + ranged combo, perfect-dodge counter, level-up pause/resume and one-time rewards.
+4. Brief main-scene startup smoke test.
 
-CI cannot test physical touch input, heat, battery, frame pacing on vivo V2120, nor prove that a real Android APK installs.
+CI cannot test physical touch input, heat, battery, frame pacing on vivo V2120, persistence after a real phone process kill, nor prove that a real Android APK installs.

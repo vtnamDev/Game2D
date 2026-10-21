@@ -1,6 +1,6 @@
 # Game2D — v0.1 development plan and acceptance contract
 
-**Status:** specification locked; first implementation branch created; runtime and device acceptance are still pending.
+**Status:** first combat prototype is in a draft pull request. Headless Godot 4.7.2 CI passed for the latest observed gameplay-code commit; device acceptance and Android APK export remain pending.
 
 ## 1. Confirmed decisions
 
@@ -33,7 +33,7 @@ These are changeable implementation defaults, not separate user-approved design 
 
 ## 3. Implemented candidate behavior on the prototype branch
 
-The code on prototype/m1-combat intends to include:
+The code on \`prototype/m1-combat\` currently includes:
 
 1. Menu and start/restart flow.
 2. Landscape arena drawn with simple shapes.
@@ -47,18 +47,19 @@ The code on prototype/m1-combat intends to include:
 10. XP, a level-up screen with three choices, and paused combat until selection.
 11. 300-second win / zero-health loss and once-per-run crystal rewards.
 12. Local save for crystals and a permanent Counter Relic unlock.
-13. Isolated tests for nearest target, out-of-range target rejection, dead-target rejection, combo damage, and run reward calculations.
-14. A GitHub Actions workflow intended to run Godot headlessly on the project and isolated tests.
+13. Combat-rule tests for nearest target, range/dead-target rejection, combo damage and reward calculations.
+14. Scene integration tests for no-target shooting, melee-mark/ranged-combo, perfect-dodge counter, level-up pause/resume and one-time reward payment.
+15. GitHub Actions checks for Godot 4.7.2 import/parse, both test scripts, and main-scene startup.
 
-This is a source/code claim, not a test result. Each item still requires runtime validation.
+The latest observed successful CI run is [here](https://github.com/vtnamDev/Game2D/actions/runs/39566039133) for gameplay-code commit \`537c8e8\`. This is a headless Linux result—not device or APK acceptance. Check the Actions page for subsequent commits.
 
 ## 4. Acceptance gates
 
-### Gate A — source integrity and project import
-- project.godot and the main scene exist at the repository root/declared path.
+### Gate A — source integrity and headless startup
+- \`project.godot\` and the main scene exist at the repository root/declared path.
 - All script and scene references resolve.
 - Godot 4.7.2 headless import and main-scene startup pass.
-- Combat-rule tests pass.
+- Combat-rule and scene integration tests pass.
 - No engine output with a script parser error or missing resource.
 
 ### Gate B — controls and combat on vivo V2120
@@ -84,7 +85,7 @@ This is a source/code claim, not a test result. Each item still requires runtime
 - Complete one ten-minute session without unexplained memory growth or severe thermal/stutter symptoms.
 - FPS and frame-time behavior are measured both in a quiet arena and at maximum tested enemy load.
 - Initial target: 60 FPS when lightly loaded; under stress, keep the game playable and aim for at least 30 FPS. These are targets to measure, not guarantees.
-- Record device temperature, battery level, memory, enemy count, renderer, and resolution with the measurements.
+- Record device temperature, battery level, memory, enemy count, renderer and resolution with the measurements.
 - No arbitrary APK size or latency threshold is claimed until measured.
 
 ### Gate E — Android export
@@ -92,7 +93,7 @@ This is a source/code claim, not a test result. Each item still requires runtime
 - If cloud building is needed, confirm the job uses a compatible official engine/template and correct Android ABI configuration.
 - Install and launch a real generated APK on vivo V2120.
 - Verify ARMv7/armeabi-v7a compatibility from the actual artifact; do not infer it from the Android editor APK's ABI.
-- Save the export log, APK metadata, commit SHA, install result, and smoke-test result.
+- Save the export log, APK metadata, commit SHA, install result and smoke-test result.
 
 ## 5. Sequence and stop conditions
 
@@ -100,7 +101,7 @@ This is a source/code claim, not a test result. Each item still requires runtime
 2. Fix every parser/import/runtime issue before adding more features.
 3. Import the branch into Godot Android and test controls and A+B in a short session.
 4. Fix the combat feel and touch layout before balancing five-minute difficulty.
-5. Run the complete-loop tests, save/reload tests, and ten attempts.
+5. Run the complete-loop tests, save/reload tests and ten attempts.
 6. Measure performance; lower enemy cap/effects if necessary.
 7. Only then validate the APK export pipeline.
 8. Add original/AI/licensed artwork and audio after the gray-box experience passes.
@@ -109,8 +110,8 @@ Stop feature work if an error prevents starting or finishing a run. Do not mask 
 
 ## 6. Known risks
 
-- The user has confirmed Godot 4.7.2 opens and runs a project on the phone, but that does not prove the prototype imports, feels right, or exports an APK.
+- Godot 4.7.2 headless CI has passed on the latest observed gameplay-code commit, but touch behavior, visual layout, device performance, saving on process death and APK export are not yet verified.
 - Android editor and APK export are separate workflows. The export templates and ABI must be verified independently.
-- The target device's measured FPS, available memory under load, thermals, input latency, and APK export capability are unknown.
+- The target device's measured FPS, available memory under load, thermals, input latency and APK export capability are unknown.
 - A telegraph-based perfect dodge may be too easy or too difficult; the window and distance must be tuned by playtesting.
-- The first build uses a deliberately small enemy set. Multiple enemy archetypes, maps, deep skill trees, audio polish, and store release are not first-gate requirements.
+- The first build uses a deliberately small enemy set. Multiple enemy archetypes, maps, deep skill trees, audio polish and store release are not first-gate requirements.

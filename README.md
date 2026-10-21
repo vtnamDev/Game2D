@@ -4,39 +4,45 @@ A small Godot 4.7.2, GDScript-only 2D arena-survival prototype for Android-first
 
 ## Current truth
 
-- The confirmed target is **landscape mode** on a vivo V2120 running Android 12.
-- The current implementation work is isolated on branch **prototype/m1-combat**.
-- The branch contains a first combat vertical slice: touch controls, enemy telegraphing, melee marks, target-seeking ranged shots, dodge counters, level-up choices, a five-minute timer, local crystals, and a permanent counter relic.
-- It uses custom-drawn placeholder shapes. No third-party art or audio is bundled.
-- **It is not yet accepted as working on the target phone.** The code still needs the Godot 4.7.2 CI run, editor/runtime inspection, and manual phone testing.
-- **No tested APK is provided or claimed.** Importing a project and exporting an Android APK are separate steps.
+- Confirmed target: landscape mode on a vivo V2120 running Android 12.
+- Implementation branch: `prototype/m1-combat`.
+- The prototype contains touch controls, enemy telegraphing, melee marks, nearest-target ranged shots, dodge counters, level-up choices, a five-minute run, local crystals and a permanent Counter Relic unlock.
+- It uses original custom-drawn placeholder shapes. No third-party art or audio is bundled.
+- The latest observed successful headless CI run is [GitHub Actions run 14](https://github.com/vtnamDev/Game2D/actions/runs/39566039133) at code commit \`537c8e8\`. Check Actions again for the status of any later commit.
+- Headless Linux checks do not certify Android touch feel, performance, thermals, save lifecycle, or APK installation on the target phone.
+- **No tested APK is provided or claimed.** Importing the project, exporting an APK, installing it, and testing it on the phone are separate gates.
 
 ## Run in Godot
 
 1. Open this repository or download its ZIP.
-2. In Godot 4.7.2, import the folder containing project.godot.
+2. In Godot 4.7.2, import the folder containing \`project.godot\`.
 3. Run the main scene.
-4. Desktop controls for a quick smoke test: arrow keys move, Space melee, F shoot, Shift dodge, Esc pause.
+4. Desktop quick-check controls: arrow keys move, Space melee, F shoot, Shift dodge, Esc pause.
 5. On a touchscreen, use the left virtual joystick and the three action buttons on the right.
 
-The current prototype uses the Compatibility renderer and a 960 × 540 landscape logical viewport. Final device scaling, frame pacing, heat, and battery use still need measurement on the vivo V2120.
+The prototype uses the Compatibility renderer and a 960 × 540 landscape logical viewport. Device scaling, frame pacing, heat, battery use and actual multi-touch behavior still need measurement on vivo V2120.
 
-## Test logic
+## Run automated checks
 
-With Godot 4.7.2 installed, run:
+These commands require the Godot 4.7.2 command-line executable in a Linux-like shell. The \`timeout\` command bounds the duration of script tests.
 
-    godot --headless --path . --editor --quit
-    godot --headless --path . --script res://tests/test_combat_rules.gd
-    godot --headless --path . --quit-after 5
+\`\`\`sh
+godot --headless --editor --path . --quit
+timeout 30s godot --headless --path . --script res://tests/test_combat_rules.gd
+timeout 30s godot --headless --path . --script res://tests/test_scene_integration.gd
+godot --headless --path . --quit-after 5
+\`\`\`
 
-These checks cover project import/parser errors, isolated combat-rule assertions, and a brief main-scene startup. They do not replace touch testing or a complete five-minute game run on the phone.
+The rule tests cover nearest-target selection, range/dead-target rejection, combo damage, and reward calculations. The scene integration test starts the actual main scene and checks no-target shooting, melee mark plus ranged combo, perfect dodge/counter, upgrade pause/resume, and one-time run rewards. The main-scene smoke test catches startup/parser errors.
+
+These checks do **not** replace touch testing or a full five-minute run on the phone.
 
 ## Development rules
 
 - Do not copy assets or gameplay code without a compatible license.
-- Keep GDScript and built-in Godot nodes; no .NET, root, native plugins, account, server, ads, or purchases are required.
+- Keep GDScript and built-in Godot nodes; no .NET, root, native plugins, account, server, ads or purchases are required.
 - Keep placeholder art until gameplay is validated.
 - Never mark a criterion as passed without an observed test result.
-- Record Godot/Android version, commit, logs, frame-rate conditions, and test outcome.
+- Record Godot/Android version, commit, logs, frame-rate conditions and test outcome.
 
-See PLAN.md, docs/RESEARCH_NOTES.md, and docs/TEST_CHECKLIST.md for decisions, sources, risks, and acceptance steps.
+See \`PLAN.md\`, \`docs/RESEARCH_NOTES.md\`, and \`docs/TEST_CHECKLIST.md\` for decisions, sources, risks and acceptance steps.
