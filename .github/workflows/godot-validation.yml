@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$GODOT_BIN" --headless --path . --quit-after 10 --script res://tests/test_scene_integration.gd 2>&1 | tee /tmp/godot-integration.log
+          timeout 30s "$GODOT_BIN" --headless --path . --script res://tests/test_scene_integration.gd 2>&1 | tee /tmp/godot-integration.log
           if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-integration.log; then
             echo "::error::Godot reported integration-test errors."
             exit 1
