@@ -94,7 +94,7 @@ func tick(delta: float, player_position: Vector2) -> bool:
 	attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
 	visual_refresh_left -= delta
 	if visual_refresh_left <= 0.0:
-		visual_refresh_left = 0.06
+		visual_refresh_left = 0.05
 		queue_redraw()
 	if not alive:
 		velocity = Vector2.ZERO
