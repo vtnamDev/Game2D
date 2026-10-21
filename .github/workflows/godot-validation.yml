@@ -1,0 +1,42 @@
+name: Godot validation
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download official Godot 4.7.2 standard editor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip" \
+            --output /tmp/godot.zip
+          mkdir -p /tmp/godot
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          GODOT_BIN="$(find /tmp/godot -type f -name 'Godot_v4.7.2-stable_linux.x86_64' | head -n 1)"
+          test -n "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+
+      - name: Import and parse project
+        shell: bash
+        run: '"$GODOT_BIN" --headless --editor --path . --quit'
+
+      - name: Run combat-rule tests
+        shell: bash
+        run: '"$GODOT_BIN" --headless --path . --script res://tests/test_combat_rules.gd'
+
+      - name: Smoke-test the main scene
+        shell: bash
+        run: '"$GODOT_BIN" --headless --path . --quit-after 5'
