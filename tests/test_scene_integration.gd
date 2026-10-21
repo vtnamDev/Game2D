@@ -41,7 +41,28 @@ func _run() -> void:
 				return
 			if not _check(actor.get_child_count() > 0 and actor.get_child(0) is CollisionShape2D, "Wood obstacles must have an actual collision shape."):
 				return
-	if not _check(obstacle_count >= 5, "At least five wooden barricades should exist in the arena."):
+	if not _check(obstacle_count >= 12, "The expanded arena should contain at least twelve wooden barricades."):
+		return
+	var camera_count := 0
+	for child in main.player.get_children():
+		if child is Camera2D:
+			camera_count += 1
+	if not _check(camera_count == 1, "The player must own one follow camera for the larger world."):
+		return
+	var world_size: Vector2 = start_stats.get("world_size", Vector2.ZERO)
+	if not _check(world_size.x >= 2200.0 and world_size.y >= 1400.0, "The map must be materially larger than the viewport."):
+		return
+
+	# New spells should not spend energy or start cooldown when there is no valid target.
+	main._on_ice_pressed()
+	if not _check(is_equal_approx(main.player.energy, 100.0), "Ice should not consume energy without a nearby enemy."):
+		return
+	if not _check(main.ice_cooldown_left == 0.0, "Ice should not start cooldown without a nearby enemy."):
+		return
+	main._on_lightning_pressed()
+	if not _check(is_equal_approx(main.player.energy, 100.0), "Lightning should not consume energy without a target."):
+		return
+	if not _check(main.lightning_cooldown_left == 0.0, "Lightning should not start cooldown without a target."):
 		return
 
 	# An unaffordable skill must not silently consume resources or start cooldown.
@@ -115,6 +136,41 @@ func _run() -> void:
 		return
 	if not _check(main.player.energy > 0.0, "A perfect dodge should restore energy."):
 		return
+
+	# Ice applies a temporary slow as well as damage.
+	main.player.energy = 100.0
+	var ice_enemy: CharacterBody2D = _make_enemy(main.player.position + Vector2(74.0, 10.0))
+	main.actors.add_child(ice_enemy)
+	main.enemies.append(ice_enemy)
+	main._on_ice_pressed()
+	if not _check(ice_enemy.slow_left > 2.0, "Ice must apply a multi-second slow."):
+		return
+	if not _check(main.ice_cooldown_left > 0.0, "Ice must start cooldown after a successful cast."):
+		return
+	if not _check(main.player.energy < 100.0, "Ice must consume energy when it hits a target."):
+		return
+	main.enemies.erase(ice_enemy)
+	ice_enemy.queue_free()
+	main.player.energy = 100.0
+
+	# Chain lightning should hit several distinct enemies and spend energy once.
+	var chain_test_enemies: Array = []
+	for chain_index in range(4):
+		var chain_enemy: CharacterBody2D = _make_enemy(main.player.position + Vector2(82.0 + chain_index * 31.0, float(chain_index % 2) * 22.0))
+		main.actors.add_child(chain_enemy)
+		main.enemies.append(chain_enemy)
+		chain_test_enemies.append(chain_enemy)
+	main._on_lightning_pressed()
+	if not _check(main.lightning_cooldown_left > 0.0, "Lightning must start cooldown after finding targets."):
+		return
+	if not _check(main.message.contains("4 MỤC TIÊU"), "Lightning should chain to four separate targets."):
+		return
+	if not _check(main.player.energy < 100.0, "Lightning should consume energy once when cast."):
+		return
+	for chain_enemy in chain_test_enemies:
+		if is_instance_valid(chain_enemy):
+			main.enemies.erase(chain_enemy)
+			chain_enemy.queue_free()
 
 	# Make two enemy rewards cross the deliberately slower level-up threshold.
 	main.xp = main.xp_to_next_level - 2
