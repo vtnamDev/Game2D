@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <ellipse cx="47" cy="76" rx="34" ry="11" fill="#02060b" opacity=".8"/>
+  <!-- massive silhouette and horned crown -->
+  <path d="M23 30h7V18h8v10h8V13h8v12h8V17h8v11h8v14h6v13h-5v10h-8v7h-9v5H34v-5h-9v-7h-7V54h-5V41h10z" fill="#100710"/>
+  <path d="M27 34h8V24h5v13h7V21h7v13h8V24h5v13h8v10h5v10h-6v9h-8v6H34v-5h-8v-8h-6V47h7z" fill="#471020"/>
+  <path d="M32 38h8v-6h7v5h7v-6h8v6h8v8h5v11h-7v8h-9v4H38v-4h-8v-8h-5V45h7z" fill="#85203a"/>
+  <!-- shoulder plates -->
+  <path d="M22 42h11v-5h7v8h-5v11h-8v-5h-5z" fill="#b33047"/>
+  <path d="M63 45h5v-8h7v5h7v10h-6v5h-8v-7h-5z" fill="#b33047"/>
+  <path d="M24 42h7v-5h3v8h-4v7h-5zM68 42h7v-4h4v9h-5v6h-4z" fill="#ff794a"/>
+  <!-- torso and armor -->
+  <path d="M35 43h9v-4h9v4h10v8h-5v13h-7v6H40v-6h-5V51h-4z" fill="#3d1729"/>
+  <path d="M39 45h7v-3h5v4h8v7h-5v9h-7v3h-7v-6h-4v-8h3z" fill="#d34a4a"/>
+  <path d="M43 47h9v5h6v5h-7v5h-8v-5h-5v-6h5z" fill="#f27646"/>
+  <path d="M44 49h8v3h-8zM47 56h5v3h-5z" fill="#ffcc67"/>
+  <!-- face, glowing eyes, fangs -->
+  <path d="M35 35h7v-4h13v4h7v9h-5v7H40v-7h-5z" fill="#1b091a"/>
+  <path d="M40 37h8v4h-8zM53 37h7v4h-7z" fill="#ffb957"/>
+  <path d="M42 38h4v2h-4zM55 38h3v2h-3z" fill="#fff5c5"/>
+  <path d="M45 44h9v3h-9z" fill="#100711"/>
+  <path d="M44 44h3v5h-3zM52 44h3v5h-3z" fill="#fff0d0"/>
+  <!-- rune crest -->
+  <path d="M44 28h7v-4h4v5h4v4h-5v4h-4v-4h-6z" fill="#f3be57"/>
+  <path d="M50 27h3v6h-3zM47 30h8v2h-8z" fill="#fff1ac"/>
+  <!-- armored feet -->
+  <path d="M33 65h11v5h-3v5H28v-5h5zM51 65h11v5h4v5H53v-5h-2z" fill="#170916"/>
+  <path d="M30 72h9v2h-9zM55 72h9v2h-9z" fill="#d59a47"/>
+</svg>
