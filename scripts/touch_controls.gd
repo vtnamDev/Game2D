@@ -376,6 +376,8 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 	var radius := _button_radius(action)
 	var energy_now := float(stats.get("energy", 100.0))
 	var disabled := energy_now + 0.001 < energy_cost
+	if action == "heal" and float(stats.get("health", 0.0)) >= float(stats.get("max_health", 100.0)) - 0.5:
+		disabled = true
 	var fill := base_color.darkened(0.52) if disabled else base_color
 	var flash := float(action_flash.get(action, 0.0))
 	if flash > 0.0:
