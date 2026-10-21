@@ -377,6 +377,13 @@ func _on_skill_pressed() -> void:
 func _on_ice_pressed() -> void:
 	if mode != "playing" or not is_instance_valid(player) or ice_cooldown_left > 0.0:
 		return
+	var nearby_count := 0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.alive and player.position.distance_to(enemy.position) <= 188.0:
+			nearby_count += 1
+	if nearby_count == 0:
+		_set_message("BĂNG PHONG CẦN KẺ ĐỊCH TRONG PHẠM VI", 0.8)
+		return
 	if not player.spend_energy(ICE_ENERGY_COST):
 		_set_message("BĂNG PHONG CẦN 28 NỘI LỰC", 0.8)
 		return
@@ -396,6 +403,10 @@ func _on_ice_pressed() -> void:
 
 func _on_lightning_pressed() -> void:
 	if mode != "playing" or not is_instance_valid(player) or lightning_cooldown_left > 0.0:
+		return
+	var first_target: Variant = CombatRules.nearest_target(enemies, player.position, 330.0)
+	if first_target == null:
+		_set_message("LÔI CHUỖI CẦN MỤC TIÊU TRONG TẦM", 0.8)
 		return
 	if not player.spend_energy(LIGHTNING_ENERGY_COST):
 		_set_message("LÔI CHUỖI CẦN 34 NỘI LỰC", 0.8)
@@ -428,6 +439,7 @@ func _on_lightning_pressed() -> void:
 		current_position = nearest.position
 	if hit_enemies.is_empty():
 		player.restore_energy(LIGHTNING_ENERGY_COST)
+		lightning_cooldown_left = 0.0
 		_set_message("LÔI CHUỖI KHÔNG TÌM THẤY MỤC TIÊU", 0.8)
 		return
 	var effect: Variant = Node2D.new()
