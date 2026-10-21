@@ -17,10 +17,10 @@ func _run() -> void:
 	var background: Node = main.get_node("World/ArenaBackground")
 	if not _check(background.floor_texture != null, "The cached floor texture must initialize."):
 		return
-	if not _check(background.floor_texture.get_size() == Vector2i(1200, 800), "The low-memory floor texture must use half-resolution world dimensions."):
+	if not _check(background.floor_texture.get_size() == Vector2(1200.0, 800.0), "The low-memory floor texture must use half-resolution world dimensions."):
 		return
 	var props_texture: Texture2D = load("res://assets/art/arena_props_atlas.png")
-	if not _check(props_texture != null and props_texture.get_size() == Vector2i(256, 64), "The generated environment prop atlas must import at 256x64."):
+	if not _check(props_texture != null and props_texture.get_size() == Vector2(256.0, 64.0), "The generated environment prop atlas must import at 256x64."):
 		return
 	if not _check(is_instance_valid(main.combat_fx), "The shared combat feedback manager must exist."):
 		return
