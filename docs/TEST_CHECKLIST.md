@@ -90,7 +90,7 @@ Ghi nhận mỗi phiên:
 - [ ] F-05: Ghi nhiệt độ pin và phần trăm pin đầu/cuối.
 - [ ] F-06: Chơi lặp 10 lượt, ghi crash, treo, lỗi lưu và giật nặng nhất.
 - [ ] F-07: Đo frame time khi camera di chuyển qua các ô nền khác nhau.
-- [ ] F-08: Đo FPS với 12 quái đang hoạt động và khi dùng đồng thời Băng Phong/Lôi Chuỗi.
+- [ ] F-08: Đo FPS với 8 quái đang hoạt động và khi dùng đồng thời Băng Phong/Lôi Chuỗi.
 
 Mục tiêu tạm thời: gần 60 FPS ở cảnh nhẹ và ít nhất 30 FPS khi tải cao. Chưa có phép đo nào được xem là đạt.
 
