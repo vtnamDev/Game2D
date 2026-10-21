@@ -166,40 +166,42 @@ func _joystick_center() -> Vector2:
 
 
 func _button_center(which: String) -> Vector2:
+	# Thumb-first layout: main actions sit low; expensive spells are grouped above and left.
+	# Positions are relative to the viewport so landscape phones with different resolutions work.
 	match which:
 		"melee":
-			return Vector2(size.x - 62.0, size.y - 68.0)
+			return Vector2(size.x - 66.0, size.y - 78.0)
 		"shoot":
-			return Vector2(size.x - 67.0, size.y - 137.0)
+			return Vector2(size.x - 76.0, size.y - 160.0)
 		"dodge":
-			return Vector2(size.x - 134.0, size.y - 72.0)
+			return Vector2(size.x - 148.0, size.y - 88.0)
 		"skill":
-			return Vector2(size.x - 134.0, size.y - 141.0)
+			return Vector2(size.x - 148.0, size.y - 174.0)
 		"ultimate":
-			return Vector2(size.x - 205.0, size.y - 72.0)
+			return Vector2(size.x - 235.0, size.y - 88.0)
 		"ice":
-			return Vector2(size.x - 205.0, size.y - 141.0)
+			return Vector2(size.x - 235.0, size.y - 174.0)
 		"lightning":
-			return Vector2(size.x - 205.0, size.y - 210.0)
+			return Vector2(size.x - 235.0, size.y - 260.0)
 	return Vector2.ZERO
 
 
 func _button_radius(which: String) -> float:
 	match which:
 		"melee":
-			return 31.0
+			return 35.0
 		"shoot":
-			return 25.0
+			return 29.0
 		"dodge":
-			return 25.0
+			return 29.0
 		"skill":
-			return 25.0
+			return 28.0
 		"ultimate":
-			return 27.0
+			return 30.0
 		"ice":
-			return 24.0
+			return 27.0
 		"lightning":
-			return 24.0
+			return 27.0
 	return 30.0
 
 
@@ -370,9 +372,9 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 	if flash > 0.0:
 		fill = fill.lightened(0.38)
 	draw_circle(center + Vector2(1.0, 4.0), radius + 3.0, Color(0.0, 0.0, 0.0, 0.48))
-	draw_circle(center, radius + 3.0, Color(0.035, 0.08, 0.10, 0.94))
+	draw_circle(center, radius + 4.0, Color(0.035, 0.08, 0.10, 0.98))
 	draw_circle(center, radius, fill)
-	draw_arc(center, radius, 0.0, TAU, 48, Color(0.72, 0.91, 0.88, 0.92), 2.0)
+	draw_arc(center, radius, 0.0, TAU, 40, Color(0.80, 0.96, 0.94, 0.98), 2.2)
 	draw_arc(center, radius - 4.0, -PI * 0.82, PI * 0.82, 36, Color(0.96, 0.78, 0.42, 0.45), 1.0)
 
 	match action:
@@ -413,7 +415,7 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 			draw_colored_polygon(PackedVector2Array([center + Vector2(3.0, -19.0), center + Vector2(-9.0, 1.0), center + Vector2(-1.0, 1.0), center + Vector2(-4.0, 18.0), center + Vector2(10.0, -4.0), center + Vector2(2.0, -4.0)]), Color(0.91, 0.96, 1.0))
 			draw_arc(center, 20.0, 0.0, TAU, 32, Color(0.66, 0.82, 1.0, 0.68), 1.4)
 
-	var label_size := 8 if action == "ice" or action == "lightning" else (9 if action == "skill" or action == "ultimate" or action == "shoot" else 10)
+	var label_size := 9 if action == "ice" or action == "lightning" else (10 if action == "skill" or action == "ultimate" or action == "shoot" else 11)
 	draw_string(font, Vector2(center.x - radius - 13.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 13.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
 
 	if cooldown > 0.0 and max_cooldown > 0.0:
