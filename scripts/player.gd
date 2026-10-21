@@ -55,7 +55,7 @@ func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
 	bounded_position.y = clampf(bounded_position.y, bounds.position.y, bounds.end.y)
 	position = bounded_position
 	if is_instance_valid(visual_sprite):
-		visual_sprite.rotation = facing_direction.angle()
+		visual_sprite.rotation = facing_direction.angle() + PI * 0.5
 		if hurt_flash_left > 0.0:
 			visual_sprite.modulate = Color(1.0, 0.56, 0.52, 1.0)
 		elif dodge_left > 0.0:
