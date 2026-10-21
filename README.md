@@ -8,7 +8,7 @@ Prototype game hành động chiến thuật 2D góc nhìn từ trên xuống, v
 - Nhánh gameplay trước đó **prototype/m1-combat** vẫn được giữ; nhánh **main** không bị thay đổi.
 - Chạy ngang màn hình, logical viewport 960 × 540, Compatibility renderer.
 - Nhân vật kiếm khách có sprite gốc, hiệu ứng chém, lướt, kiếm khí, Phá Trận và Tuyệt Kỹ.
-- Năm sprite gốc riêng cho kiếm khách, quỷ thường, quỷ nhanh, hộ vệ, tinh anh và trùm. Môi trường đá/rêu/tàn tích được dựng procedural; hiệu ứng báo đòn, ánh sáng giả lập và vệt đạn được vẽ bằng GDScript.
+- Sáu sprite gốc riêng cho kiếm khách, quỷ thường, quỷ nhanh, hộ vệ, tinh anh và trùm. Môi trường đá/rêu/tàn tích được dựng procedural; hiệu ứng báo đòn, ánh sáng giả lập và vệt đạn được vẽ bằng GDScript.
 - Nhiều loại địch có tốc độ, sinh lực, sát thương và thời gian báo đòn khác nhau.
 - Vòng chơi tối đa 8 phút. Trùm xuất hiện ở phút thứ 6; tiêu diệt trùm để thắng, hết giờ mà trùm còn sống là thất bại.
 - Giao diện, menu, thông báo và điều khiển đã chuyển sang tiếng Việt.
