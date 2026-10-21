@@ -11,7 +11,7 @@ const CombatFxScript = preload("res://scripts/combat_fx.gd")
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
 const RUN_DURATION := 480.0
 const BOSS_SPAWN_TIME := 360.0
-const MAX_ENEMIES := 8
+const MAX_ENEMIES := 10
 const MELEE_RANGE := 67.0
 const RANGED_RANGE := 310.0
 const MELEE_MARK_DURATION := 3.0
@@ -22,6 +22,9 @@ const SKILL_ENERGY_COST := 32.0
 const ULTIMATE_ENERGY_COST := 100.0
 const ICE_ENERGY_COST := 28.0
 const LIGHTNING_ENERGY_COST := 34.0
+const HEAL_ENERGY_COST := 30.0
+const HEAL_AMOUNT := 32.0
+const HEAL_COOLDOWN := 18.0
 
 @onready var actors: Node2D = $World/Actors
 @onready var controls: Control = $UI/TouchControls
@@ -38,6 +41,10 @@ var shot_cooldown_left: float = 0.0
 var skill_cooldown_left: float = 0.0
 var ice_cooldown_left: float = 0.0
 var lightning_cooldown_left: float = 0.0
+var heal_cooldown_left: float = 0.0
+var game_camera: Camera2D
+var camera_shake_left: float = 0.0
+var camera_shake_strength: float = 0.0
 var xp: int = 0
 var xp_to_next_level: int = 8
 var kills: int = 0
@@ -72,6 +79,7 @@ func _ready() -> void:
 	controls.ultimate_pressed.connect(_on_ultimate_pressed)
 	controls.ice_pressed.connect(_on_ice_pressed)
 	controls.lightning_pressed.connect(_on_lightning_pressed)
+	controls.heal_pressed.connect(_on_heal_pressed)
 	controls.pause_pressed.connect(_on_pause_pressed)
 	controls.resume_requested.connect(_on_resume_pressed)
 	controls.restart_requested.connect(_start_run)
@@ -86,6 +94,12 @@ func _process(delta: float) -> void:
 		message_lifetime = maxf(0.0, message_lifetime - delta)
 		if message_lifetime <= 0.0:
 			message = ""
+	if is_instance_valid(game_camera):
+		if camera_shake_left > 0.0:
+			camera_shake_left = maxf(0.0, camera_shake_left - delta)
+			game_camera.offset = Vector2(randf_range(-camera_shake_strength, camera_shake_strength), randf_range(-camera_shake_strength, camera_shake_strength))
+		else:
+			game_camera.offset = Vector2.ZERO
 	ui_refresh_left -= delta
 	if ui_refresh_left <= 0.0:
 		ui_refresh_left = 0.12
@@ -111,6 +125,7 @@ func _physics_process(delta: float) -> void:
 	skill_cooldown_left = maxf(0.0, skill_cooldown_left - delta)
 	ice_cooldown_left = maxf(0.0, ice_cooldown_left - delta)
 	lightning_cooldown_left = maxf(0.0, lightning_cooldown_left - delta)
+	heal_cooldown_left = maxf(0.0, heal_cooldown_left - delta)
 
 	var requested_move: Vector2 = controls.move_vector
 	var keyboard_move := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
@@ -127,7 +142,7 @@ func _physics_process(delta: float) -> void:
 	if spawn_timer <= 0.0:
 		_spawn_enemy()
 		var ramp := clampf(elapsed_seconds / RUN_DURATION, 0.0, 1.0)
-		spawn_timer = 2.8 - ramp * 0.45
+		spawn_timer = 2.25 - ramp * 0.50
 
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
@@ -139,6 +154,7 @@ func _physics_process(delta: float) -> void:
 				combat_fx.play_sfx("swing")
 			var result: Dictionary = player.receive_damage(enemy.attack_damage)
 			if bool(result.get("applied", false)):
+				request_camera_shake(4.0, 0.13)
 				if is_instance_valid(combat_fx):
 					combat_fx.add_hit(player.position, Color(1.0, 0.20, 0.20))
 					combat_fx.play_sfx("hurt")
@@ -170,6 +186,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_ice_pressed()
 		KEY_T:
 			_on_lightning_pressed()
+		KEY_H:
+			_on_heal_pressed()
 		KEY_ESCAPE:
 			_on_pause_pressed()
 
@@ -224,6 +242,9 @@ func _start_run() -> void:
 	skill_cooldown_left = 0.0
 	ice_cooldown_left = 0.0
 	lightning_cooldown_left = 0.0
+	heal_cooldown_left = 0.0
+	camera_shake_left = 0.0
+	camera_shake_strength = 0.0
 	xp = 0
 	xp_to_next_level = 8
 	kills = 0
@@ -248,6 +269,7 @@ func _start_run() -> void:
 	camera.limit_bottom = int(WORLD_SIZE.y)
 	camera.enabled = true
 	player.add_child(camera)
+	game_camera = camera
 	player.visible = true
 	player.modulate = Color.WHITE
 	player.self_modulate = Color.WHITE
@@ -274,8 +296,9 @@ func _new_actor_body(actor_script: Script, layer: int, mask: int, collision_radi
 
 
 func _player_bounds() -> Rect2:
-	var half_view := get_viewport_rect().size * 0.5
-	var margin := half_view + Vector2(24.0, 24.0)
+	# Permit movement almost to the actual map edge. Camera limits handle what is visible;
+	# using half-viewport margins here created a large invisible wall well inside the map.
+	var margin := Vector2(18.0, 18.0)
 	return Rect2(margin, WORLD_SIZE - margin * 2.0)
 
 
@@ -300,7 +323,7 @@ func _spawn_enemy(forced_kind: String = "") -> void:
 	spawn_position.x = clampf(spawn_position.x, 28.0, WORLD_SIZE.x - 28.0)
 	spawn_position.y = clampf(spawn_position.y, 28.0, WORLD_SIZE.y - 28.0)
 
-	var radius := 23.0 if kind == "boss" else (16.0 if kind == "guardian" or kind == "elite" else 12.0)
+	var radius := 23.0 if kind == "boss" else (20.0 if kind == "brute" else (16.0 if kind == "guardian" or kind == "elite" else (13.0 if kind == "hexer" else 12.0)))
 	var enemy: Variant = _new_actor_body(EnemyScript, 2, 5, radius)
 	enemy.position = spawn_position
 	enemy.configure_kind(kind, elapsed_seconds / RUN_DURATION)
@@ -309,11 +332,16 @@ func _spawn_enemy(forced_kind: String = "") -> void:
 
 
 func _choose_enemy_kind() -> String:
-	if elapsed_seconds >= 240.0 and randf() < 0.15:
+	# Weighted late-game mix: distinct silhouettes and different engagement ranges.
+	if elapsed_seconds >= 250.0 and randf() < 0.16:
 		return "elite"
-	if elapsed_seconds >= 150.0 and randf() < 0.24:
+	if elapsed_seconds >= 160.0 and randf() < 0.22:
 		return "guardian"
-	if elapsed_seconds >= 75.0 and randf() < 0.25:
+	if elapsed_seconds >= 115.0 and randf() < 0.25:
+		return "brute"
+	if elapsed_seconds >= 75.0 and randf() < 0.28:
+		return "hexer"
+	if elapsed_seconds >= 55.0 and randf() < 0.28:
 		return "stalker"
 	return "shade"
 
@@ -420,6 +448,7 @@ func _on_ice_pressed() -> void:
 	if is_instance_valid(combat_fx):
 		combat_fx.add_ice(player.position, 188.0)
 		combat_fx.play_sfx("ice")
+	request_camera_shake(2.5, 0.11)
 	var affected := 0
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
@@ -461,7 +490,7 @@ func _on_lightning_pressed() -> void:
 			break
 		hit_enemies.append(nearest)
 		chain_points.append(nearest.position)
-		var damage := 38.0
+		var damage := 44.0
 		if nearest.marked_time > 0.0:
 			damage += combo_bonus * 0.5
 			nearest.marked_time = 0.0
@@ -476,8 +505,37 @@ func _on_lightning_pressed() -> void:
 	if is_instance_valid(combat_fx):
 		combat_fx.add_lightning(chain_points)
 		combat_fx.play_sfx("lightning")
+	request_camera_shake(3.0, 0.12)
 	player.play_action("lightning", chain_points[1])
 	_set_message("LÔI CHUỖI — %d MỤC TIÊU • %.0f SÁT THƯƠNG" % [hit_enemies.size(), total_damage], 1.1)
+
+
+func _on_heal_pressed() -> void:
+	if mode != "playing" or not is_instance_valid(player) or heal_cooldown_left > 0.0:
+		return
+	if player.health >= player.max_health - 0.5:
+		_set_message("SINH LỰC ĐANG ĐẦY", 0.65)
+		return
+	if not player.spend_energy(HEAL_ENERGY_COST):
+		_set_message("HỒI MÁU CẦN 30 NỘI LỰC", 0.8)
+		return
+	var health_before: float = player.health
+	player.heal(HEAL_AMOUNT)
+	if is_equal_approx(player.health, health_before):
+		player.restore_energy(HEAL_ENERGY_COST)
+		return
+	heal_cooldown_left = HEAL_COOLDOWN
+	player.play_action("heal")
+	if is_instance_valid(combat_fx):
+		combat_fx.add_heal(player.position)
+		combat_fx.play_sfx("heal")
+	request_camera_shake(1.2, 0.07)
+	_set_message("HỒI KHÍ — +%.0f SINH LỰC" % (player.health - health_before), 0.9)
+
+
+func request_camera_shake(strength: float, duration: float) -> void:
+	camera_shake_strength = maxf(camera_shake_strength, strength)
+	camera_shake_left = maxf(camera_shake_left, duration)
 
 
 func _on_ultimate_pressed() -> void:
@@ -491,6 +549,7 @@ func _on_ultimate_pressed() -> void:
 	if is_instance_valid(combat_fx):
 		combat_fx.add_slam(player.position, 228.0, Color(0.40, 0.77, 1.0))
 		combat_fx.play_sfx("ultimate")
+	request_camera_shake(6.0, 0.22)
 	player.invulnerability_left = maxf(player.invulnerability_left, 0.72)
 	var hit_count := 0
 	for enemy in enemies.duplicate():
@@ -573,6 +632,7 @@ func _damage_enemy(enemy: Variant, amount: float) -> void:
 		return
 	if is_instance_valid(combat_fx):
 		combat_fx.add_hit(enemy.position, Color(1.0, 0.76, 0.38) if enemy.marked_time > 0.0 else Color(1.0, 0.43, 0.35))
+	request_camera_shake(1.5 if amount < 40.0 else 2.8, 0.055 if amount < 40.0 else 0.085)
 	if enemy.take_damage(amount):
 		_enemy_defeated(enemy)
 
@@ -782,6 +842,7 @@ func _status() -> Dictionary:
 		"skill_cd": skill_cooldown_left,
 		"ice_cd": ice_cooldown_left,
 		"lightning_cd": lightning_cooldown_left,
+		"heal_cd": heal_cooldown_left,
 		"dodge_cd": player.dodge_cooldown_left if is_instance_valid(player) else 0.0,
 		"boss_spawned": boss_spawned,
 		"world_size": WORLD_SIZE,

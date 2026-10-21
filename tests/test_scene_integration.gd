@@ -13,20 +13,20 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 
-	# Static art should be generated once and submitted as one floor texture, not rebuilt every camera step.
+	# The floor is an imported repeating tile so Android does not rely on a large runtime-generated texture.
 	var background: Node = main.get_node("World/ArenaBackground")
-	if not _check(background.floor_texture != null, "The cached floor texture must initialize."):
+	if not _check(background.floor_texture != null, "The imported arena floor tile must initialize."):
 		return
-	if not _check(background.floor_texture.get_size() == Vector2(1200.0, 800.0), "The low-memory floor texture must use half-resolution world dimensions."):
+	if not _check(background.floor_texture.get_size() == Vector2(96.0, 72.0), "The imported floor tile must have the expected 96x72 dimensions."):
 		return
 	var props_texture: Texture2D = load("res://assets/art/arena_props_atlas.png")
 	if not _check(props_texture != null and props_texture.get_size() == Vector2(256.0, 64.0), "The generated environment prop atlas must import at 256x64."):
 		return
 	if not _check(is_instance_valid(main.combat_fx), "The shared combat feedback manager must exist."):
 		return
-	if not _check(main.combat_fx._sounds.size() >= 10, "Procedural audio bank must include at least ten combat sounds."):
+	if not _check(main.combat_fx._sounds.size() >= 11, "Procedural audio bank must include the healing sound as well as combat sounds."):
 		return
-	for sound_name in ["swing", "hit", "dash", "slam", "ice", "lightning", "ultimate", "death", "pickup"]:
+	for sound_name in ["swing", "hit", "dash", "slam", "ice", "lightning", "ultimate", "death", "pickup", "heal"]:
 		var stream: AudioStreamWAV = main.combat_fx._sounds.get(sound_name)
 		if not _check(stream != null and stream.data.size() > 100, "Audio effect %s must contain generated PCM data." % sound_name):
 			return
@@ -76,6 +76,48 @@ func _run() -> void:
 	var world_size: Vector2 = start_stats.get("world_size", Vector2.ZERO)
 	if not _check(world_size.x >= 2200.0 and world_size.y >= 1400.0, "The map must be materially larger than the viewport."):
 		return
+	var bounds: Rect2 = main._player_bounds()
+	if not _check(bounds.position == Vector2(18.0, 18.0), "The player must not be clamped one viewport-width away from the real map border."):
+		return
+	if not _check(bounds.size == world_size - Vector2(36.0, 36.0), "The movement bounds must reach almost to the actual world edge."):
+		return
+	var brute_test: CharacterBody2D = _make_enemy(main.player.position + Vector2(100.0, 0.0))
+	brute_test.configure_kind("brute", 0.5)
+	var hexer_test: CharacterBody2D = _make_enemy(main.player.position + Vector2(120.0, 0.0))
+	hexer_test.configure_kind("hexer", 0.5)
+	if not _check(brute_test.max_health > hexer_test.max_health, "The brute should be much tougher than the ranged hexer."):
+		return
+	if not _check(hexer_test.attack_range >= 120.0, "The hexer must have a distinct ranged engagement distance."):
+		return
+	if not _check(brute_test.attack_damage > hexer_test.attack_damage, "The brute must threaten the player with stronger attacks."):
+		return
+	brute_test.free()
+	hexer_test.free()
+
+	# Healing should be a deliberate, cooldown-bound decision, not an automatic free refill.
+	main.player.energy = 100.0
+	main.player.health = main.player.max_health
+	main._on_heal_pressed()
+	if not _check(main.heal_cooldown_left == 0.0, "Healing at full health must not start cooldown."):
+		return
+	if not _check(is_equal_approx(main.player.energy, 100.0), "Healing at full health must not waste energy."):
+		return
+	main.player.health = 50.0
+	main._on_heal_pressed()
+	if not _check(is_equal_approx(main.player.health, 82.0), "Healing should restore 32 health up to the maximum."):
+		return
+	if not _check(is_equal_approx(main.player.energy, 70.0), "Healing should consume 30 energy."):
+		return
+	if not _check(is_equal_approx(main.heal_cooldown_left, 18.0), "Healing should start an 18-second cooldown."):
+		return
+	if not _check(main.combat_fx._sounds.has("heal"), "Healing must have a dedicated sound effect."):
+		return
+	if not _check(main.combat_fx._effects.size() > 0 and String(main.combat_fx._effects.back()["kind"]) == "heal", "Healing must create a visible healing effect."):
+		return
+	main.player.health = main.player.max_health
+	main.player.energy = 100.0
+	main.heal_cooldown_left = 0.0
+
 
 	# New spells should not spend energy or start cooldown when there is no valid target.
 	main._on_ice_pressed()
