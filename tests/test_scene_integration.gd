@@ -81,6 +81,18 @@ func _run() -> void:
 		return
 	if not _check(bounds.size == world_size - Vector2(36.0, 36.0), "The movement bounds must reach almost to the actual world edge."):
 		return
+	var brute_test: CharacterBody2D = _make_enemy(main.player.position + Vector2(100.0, 0.0))
+	brute_test.configure_kind("brute", 0.5)
+	var hexer_test: CharacterBody2D = _make_enemy(main.player.position + Vector2(120.0, 0.0))
+	hexer_test.configure_kind("hexer", 0.5)
+	if not _check(brute_test.max_health > hexer_test.max_health, "The brute should be much tougher than the ranged hexer."):
+		return
+	if not _check(hexer_test.attack_range >= 120.0, "The hexer must have a distinct ranged engagement distance."):
+		return
+	if not _check(brute_test.attack_damage > hexer_test.attack_damage, "The brute must threaten the player with stronger attacks."):
+		return
+	brute_test.free()
+	hexer_test.free()
 
 	# Healing should be a deliberate, cooldown-bound decision, not an automatic free refill.
 	main.player.energy = 100.0
