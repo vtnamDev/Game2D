@@ -82,7 +82,7 @@ func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -
 		_:
 			action_duration = 0.20
 	action_time = action_duration
-	if target_position.distance_squared_to(position) > 1.0:
+	if target_position != Vector2.ZERO and target_position.distance_squared_to(position) > 1.0:
 		var direction := (target_position - position).normalized()
 		if direction.length_squared() > 0.01:
 			facing_direction = direction
