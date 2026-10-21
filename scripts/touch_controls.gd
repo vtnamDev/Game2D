@@ -30,8 +30,10 @@ var action_flash: Dictionary = {
 	"lightning": 0.0
 }
 
-const JOYSTICK_RADIUS := 62.0
+const JOYSTICK_RADIUS := 54.0
 const DEAD_ZONE := 0.14
+var _joystick_redraw_left: float = 0.0
+var _redraw_pending: bool = false
 
 
 func _ready() -> void:
@@ -47,6 +49,14 @@ func _process(delta: float) -> void:
 		if remaining != float(action_flash[action]):
 			action_flash[action] = remaining
 			needs_redraw = true
+	if move_vector.length_squared() > 0.001:
+		_joystick_redraw_left -= delta
+		if _joystick_redraw_left <= 0.0:
+			_joystick_redraw_left = 1.0 / 30.0
+			needs_redraw = true
+	if _redraw_pending:
+		needs_redraw = true
+		_redraw_pending = false
 	if needs_redraw:
 		queue_redraw()
 
@@ -152,48 +162,48 @@ func _update_joystick(point: Vector2) -> void:
 	else:
 		move_vector = offset.normalized() * strength
 	movement_changed.emit(move_vector)
-	queue_redraw()
+	_redraw_pending = true
 
 
 func _joystick_center() -> Vector2:
-	return Vector2(98.0, size.y - 95.0)
+	return Vector2(91.0, size.y - 89.0)
 
 
 func _button_center(which: String) -> Vector2:
 	match which:
 		"melee":
-			return Vector2(size.x - 86.0, size.y - 82.0)
+			return Vector2(size.x - 62.0, size.y - 68.0)
 		"shoot":
-			return Vector2(size.x - 169.0, size.y - 123.0)
+			return Vector2(size.x - 67.0, size.y - 137.0)
 		"dodge":
-			return Vector2(size.x - 87.0, size.y - 166.0)
+			return Vector2(size.x - 134.0, size.y - 72.0)
 		"skill":
-			return Vector2(size.x - 173.0, size.y - 204.0)
+			return Vector2(size.x - 134.0, size.y - 141.0)
 		"ultimate":
-			return Vector2(size.x - 257.0, size.y - 166.0)
+			return Vector2(size.x - 205.0, size.y - 72.0)
 		"ice":
-			return Vector2(size.x - 257.0, size.y - 235.0)
+			return Vector2(size.x - 205.0, size.y - 141.0)
 		"lightning":
-			return Vector2(size.x - 84.0, size.y - 247.0)
+			return Vector2(size.x - 205.0, size.y - 210.0)
 	return Vector2.ZERO
 
 
 func _button_radius(which: String) -> float:
 	match which:
 		"melee":
-			return 36.0
+			return 31.0
 		"shoot":
-			return 31.0
+			return 25.0
 		"dodge":
-			return 30.0
+			return 25.0
 		"skill":
-			return 31.0
+			return 25.0
 		"ultimate":
-			return 34.0
+			return 27.0
 		"ice":
-			return 29.0
+			return 24.0
 		"lightning":
-			return 29.0
+			return 24.0
 	return 30.0
 
 
@@ -336,11 +346,11 @@ func _draw_controls(font: Font) -> void:
 	draw_arc(center, JOYSTICK_RADIUS - 7.0, 0.0, TAU, 48, Color(0.20, 0.42, 0.50, 0.50), 1.0)
 	draw_line(center + Vector2(-JOYSTICK_RADIUS + 12.0, 0.0), center + Vector2(JOYSTICK_RADIUS - 12.0, 0.0), Color(0.33, 0.60, 0.64, 0.24), 1.0)
 	draw_line(center + Vector2(0.0, -JOYSTICK_RADIUS + 12.0), center + Vector2(0.0, JOYSTICK_RADIUS - 12.0), Color(0.33, 0.60, 0.64, 0.24), 1.0)
-	var knob := center + move_vector * 31.0
-	draw_circle(knob + Vector2(1.0, 3.0), 24.0, Color(0.005, 0.02, 0.03, 0.46))
-	draw_circle(knob, 22.0, Color(0.13, 0.35, 0.43, 0.98))
-	draw_circle(knob, 17.0, Color(0.27, 0.67, 0.73, 0.95))
-	draw_arc(knob, 20.0, PI, TAU, 24, Color(0.79, 0.97, 0.95, 0.85), 1.8)
+	var knob := center + move_vector * 27.0
+	draw_circle(knob + Vector2(1.0, 3.0), 21.0, Color(0.005, 0.02, 0.03, 0.46))
+	draw_circle(knob, 19.0, Color(0.13, 0.35, 0.43, 0.98))
+	draw_circle(knob, 15.0, Color(0.27, 0.67, 0.73, 0.95))
+	draw_arc(knob, 17.0, PI, TAU, 24, Color(0.79, 0.97, 0.95, 0.85), 1.8)
 
 	_draw_action_button(font, "melee", "ĐÁNH", Color(0.60, 0.18, 0.21), float(stats.get("melee_cd", 0.0)), 0.36, 0.0)
 	_draw_action_button(font, "shoot", "KIẾM KHÍ", Color(0.15, 0.43, 0.57), float(stats.get("shoot_cd", 0.0)), 0.48, 9.0)
@@ -407,8 +417,8 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 			draw_colored_polygon(PackedVector2Array([center + Vector2(3.0, -19.0), center + Vector2(-9.0, 1.0), center + Vector2(-1.0, 1.0), center + Vector2(-4.0, 18.0), center + Vector2(10.0, -4.0), center + Vector2(2.0, -4.0)]), Color(0.91, 0.96, 1.0))
 			draw_arc(center, 20.0, 0.0, TAU, 32, Color(0.66, 0.82, 1.0, 0.68), 1.4)
 
-	var label_size := 9 if action == "ice" or action == "lightning" else (10 if action == "skill" or action == "ultimate" or action == "shoot" else 12)
-	draw_string(font, Vector2(center.x - radius - 12.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 12.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
+	var label_size := 8 if action == "ice" or action == "lightning" else (9 if action == "skill" or action == "ultimate" or action == "shoot" else 10)
+	draw_string(font, Vector2(center.x - radius - 13.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 13.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
 
 	if cooldown > 0.0 and max_cooldown > 0.0:
 		var remaining := clampf(cooldown / max_cooldown, 0.0, 1.0)
