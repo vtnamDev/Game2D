@@ -134,6 +134,9 @@ func _physics_process(delta: float) -> void:
 			continue
 		var attack_resolved: bool = enemy.tick(delta, player.position)
 		if attack_resolved and not player.is_dodging():
+			if is_instance_valid(combat_fx):
+				combat_fx.add_slash(enemy.position, enemy.position.direction_to(player.position), Color(1.0, 0.30, 0.24))
+				combat_fx.play_sfx("swing")
 			var result: Dictionary = player.receive_damage(enemy.attack_damage)
 			if bool(result.get("applied", false)):
 				if is_instance_valid(combat_fx):
