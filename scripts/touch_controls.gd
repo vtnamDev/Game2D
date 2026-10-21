@@ -197,7 +197,9 @@ func _draw_menu(font: Font) -> void:
 	var relic_text := "COUNTER RELIC UNLOCKED" if bool(stats.get("unlocked_relic", false)) else "UNLOCK COUNTER RELIC - 20 CRYSTALS"
 	_draw_button_rect(font, _unlock_rect(), relic_text)
 	_draw_centered(font, "Saved crystals: %d" % int(stats.get("crystals", 0)), Vector2(size.x * 0.5, size.y * 0.84), 15, Color(0.9, 0.83, 0.63))
-	_draw_centered(font, "Keyboard: arrows move, Space melee, F shoot, Shift dodge, Esc pause.", Vector2(size.x * 0.5, size.y * 0.93), 12, Color(0.62, 0.69, 0.75))
+	if message != "":
+		_draw_centered(font, message, Vector2(size.x * 0.5, size.y * 0.89), 14, Color(1.0, 0.78, 0.44))
+	_draw_centered(font, "Keyboard: arrows move, Space melee, F shoot, Shift dodge, Esc pause.", Vector2(size.x * 0.5, size.y * 0.96), 12, Color(0.62, 0.69, 0.75))
 
 
 func _draw_hud(font: Font) -> void:
@@ -238,7 +240,7 @@ func _draw_upgrade_overlay(font: Font) -> void:
 		draw_rect(rect, Color(0.10, 0.15, 0.20, 0.96), true)
 		draw_rect(rect, Color(0.72, 0.82, 0.88, 0.85), false, 2.0)
 		draw_string(font, Vector2(rect.position.x + 10.0, rect.position.y + 28.0), titles[index], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 20.0, 16, Color(1.0, 0.76, 0.31))
-		var lines := descriptions[index].split("\n")
+		var lines: PackedStringArray = descriptions[index].split("\n")
 		for line_index in range(lines.size()):
 			draw_string(font, Vector2(rect.position.x + 10.0, rect.position.y + 60.0 + line_index * 22.0), lines[line_index], HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 20.0, 13, Color(0.87, 0.91, 0.94))
 

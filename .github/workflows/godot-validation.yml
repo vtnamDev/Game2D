@@ -31,12 +31,31 @@ jobs:
 
       - name: Import and parse project
         shell: bash
-        run: '"$GODOT_BIN" --headless --editor --path . --quit'
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --editor --path . --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-import.log; then
+            echo "::error::Godot reported parser/runtime errors during project import."
+            exit 1
+          fi
 
       - name: Run combat-rule tests
         shell: bash
-        run: '"$GODOT_BIN" --headless --path . --script res://tests/test_combat_rules.gd'
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --script res://tests/test_combat_rules.gd 2>&1 | tee /tmp/godot-tests.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-tests.log; then
+            echo "::error::Godot reported test errors."
+            exit 1
+          fi
+          grep -F 'PASS: combat rules tests' /tmp/godot-tests.log
 
       - name: Smoke-test the main scene
         shell: bash
-        run: '"$GODOT_BIN" --headless --path . --quit-after 5'
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --quit-after 5 2>&1 | tee /tmp/godot-smoke.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-smoke.log; then
+            echo "::error::Godot reported errors during main-scene startup."
+            exit 1
+          fi
