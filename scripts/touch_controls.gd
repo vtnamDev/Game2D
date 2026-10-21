@@ -32,7 +32,7 @@ var action_flash: Dictionary = {
 
 const JOYSTICK_RADIUS := 54.0
 const DEAD_ZONE := 0.14
-var _joystick_redraw_left: float = 0.0
+var _redraw_rate_left: float = 0.0
 var _redraw_pending: bool = false
 
 
@@ -43,21 +43,17 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	var needs_redraw := false
 	for action in action_flash.keys():
 		var remaining: float = maxf(0.0, float(action_flash[action]) - delta)
 		if remaining != float(action_flash[action]):
 			action_flash[action] = remaining
-			needs_redraw = true
+			_redraw_pending = true
 	if move_vector.length_squared() > 0.001:
-		_joystick_redraw_left -= delta
-		if _joystick_redraw_left <= 0.0:
-			_joystick_redraw_left = 1.0 / 30.0
-			needs_redraw = true
-	if _redraw_pending:
-		needs_redraw = true
+		_redraw_pending = true
+	_redraw_rate_left -= delta
+	if _redraw_pending and _redraw_rate_left <= 0.0:
+		_redraw_rate_left = 1.0 / 30.0
 		_redraw_pending = false
-	if needs_redraw:
 		queue_redraw()
 
 
