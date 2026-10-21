@@ -6,7 +6,6 @@ const EnemyScript = preload("res://scripts/enemy.gd")
 const ProjectileScript = preload("res://scripts/projectile.gd")
 const PickupScript = preload("res://scripts/crystal_pickup.gd")
 const WoodObstacleScript = preload("res://scripts/wood_obstacle.gd")
-const LightningEffectScript = preload("res://scripts/lightning_effect.gd")
 const CombatFxScript = preload("res://scripts/combat_fx.gd")
 
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
@@ -334,8 +333,7 @@ func _on_melee_pressed() -> void:
 	if is_instance_valid(combat_fx):
 		combat_fx.add_slash(player.position, player.position.direction_to(target.position))
 		combat_fx.play_sfx("swing")
-	combat_fx.add_hit(target.position)
-	combat_fx.play_sfx("hit")
+		combat_fx.play_sfx("hit")
 	player.restore_energy(5.0)
 	target.mark(MELEE_MARK_DURATION + (1.2 if counter_relic_unlocked else 0.0))
 	_set_message("KIẾM ẤN ĐÃ GẮN — DÙNG KIẾM KHÍ ĐỂ KÍCH NỔ", 0.8)
@@ -472,10 +470,6 @@ func _on_lightning_pressed() -> void:
 		lightning_cooldown_left = 0.0
 		_set_message("LÔI CHUỖI KHÔNG TÌM THẤY MỤC TIÊU", 0.8)
 		return
-	var effect: Variant = Node2D.new()
-	effect.set_script(LightningEffectScript)
-	effect.points = chain_points
-	actors.add_child(effect)
 	if is_instance_valid(combat_fx):
 		combat_fx.add_lightning(chain_points)
 		combat_fx.play_sfx("lightning")
@@ -514,6 +508,8 @@ func _on_projectile_hit(target: Node2D, raw_damage: float) -> void:
 		return
 	var marked: bool = float(target.get("marked_time")) > 0.0
 	var damage := CombatRules.combo_damage(raw_damage, combo_bonus, marked)
+	if is_instance_valid(combat_fx):
+		combat_fx.play_sfx("hit")
 	if marked:
 		target.set("marked_time", 0.0)
 		_set_message("KIẾM ẤN BÙNG NỔ! +%.0f SÁT THƯƠNG" % combo_bonus, 0.85)
