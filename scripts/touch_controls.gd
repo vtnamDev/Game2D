@@ -269,7 +269,7 @@ func _draw_hud(font: Font) -> void:
 	draw_rect(Rect2(20.0, 58.0, 190.0, 7.0), Color(0.10, 0.15, 0.20), true)
 	draw_rect(Rect2(20.0, 58.0, 190.0 * energy_ratio, 7.0), Color(0.12, 0.68, 0.80), true)
 	draw_rect(Rect2(20.0, 58.0, 190.0 * energy_ratio, 2.0), Color(0.60, 0.98, 1.0, 0.85), true)
-	draw_string(font, Vector2(20.0, 82.0), "EXP %d/%d" % [int(stats.get("xp", 0)), int(stats.get("xp_required", 8))], HORIZONTAL_ALIGNMENT_LEFT, 112.0, 13, Color(0.79, 0.89, 0.93))
+	draw_string(font, Vector2(20.0, 82.0), "KN %d/%d" % [int(stats.get("xp", 0)), int(stats.get("xp_required", 8))], HORIZONTAL_ALIGNMENT_LEFT, 112.0, 13, Color(0.79, 0.89, 0.93))
 	draw_string(font, Vector2(133.0, 82.0), "◇ %d" % int(stats.get("crystals", 0)), HORIZONTAL_ALIGNMENT_LEFT, 82.0, 13, Color(0.49, 0.95, 0.86))
 	draw_string(font, Vector2(221.0, 82.0), "KHÍ %d%%" % int(round(energy_ratio * 100.0)), HORIZONTAL_ALIGNMENT_LEFT, 80.0, 12, Color(0.53, 0.85, 0.94))
 
@@ -293,7 +293,7 @@ func _draw_controls(font: Font) -> void:
 	draw_circle(knob, 17.0, Color(0.27, 0.67, 0.73, 0.95))
 	draw_arc(knob, 20.0, PI, TAU, 24, Color(0.79, 0.97, 0.95, 0.85), 1.8)
 
-	_draw_action_button(font, "melee", "ĐÁNH", Color(0.60, 0.18, 0.21), 0.0, 0.0, 0.0)
+	_draw_action_button(font, "melee", "ĐÁNH", Color(0.60, 0.18, 0.21), float(stats.get("melee_cd", 0.0)), 0.36, 0.0)
 	_draw_action_button(font, "shoot", "KIẾM KHÍ", Color(0.15, 0.43, 0.57), float(stats.get("shoot_cd", 0.0)), 0.48, 9.0)
 	_draw_action_button(font, "dodge", "LƯỚT", Color(0.12, 0.53, 0.59), float(stats.get("dodge_cd", 0.0)), 1.15, 0.0)
 	_draw_action_button(font, "skill", "PHÁ TRẬN", Color(0.23, 0.43, 0.32), float(stats.get("skill_cd", 0.0)), 7.0, 32.0)
