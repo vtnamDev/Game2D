@@ -18,6 +18,16 @@ var action_name: String = ""
 var action_time: float = 0.0
 var action_duration: float = 0.25
 var hurt_flash_left: float = 0.0
+var visual_sprite: Sprite2D
+
+
+func _ready() -> void:
+	visual_sprite = Sprite2D.new()
+	visual_sprite.texture = load("res://assets/art/hero_swordmaster.svg") as Texture2D
+	visual_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	visual_sprite.scale = Vector2(0.86, 0.86)
+	visual_sprite.show_behind_parent = true
+	add_child(visual_sprite)
 
 
 func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
@@ -44,6 +54,14 @@ func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
 	bounded_position.x = clampf(bounded_position.x, bounds.position.x, bounds.end.x)
 	bounded_position.y = clampf(bounded_position.y, bounds.position.y, bounds.end.y)
 	position = bounded_position
+	if is_instance_valid(visual_sprite):
+		visual_sprite.rotation = facing_direction.angle()
+		if hurt_flash_left > 0.0:
+			visual_sprite.modulate = Color(1.0, 0.56, 0.52, 1.0)
+		elif dodge_left > 0.0:
+			visual_sprite.modulate = Color(0.48, 0.98, 1.0, 1.0)
+		else:
+			visual_sprite.modulate = Color.WHITE
 	queue_redraw()
 
 
@@ -125,12 +143,11 @@ func heal(amount: float) -> void:
 func _draw() -> void:
 	var bob := sin(animation_clock * 10.0) * 1.1 if velocity.length_squared() > 20.0 else sin(animation_clock * 2.5) * 0.35
 
-	# Soft contact shadow.
+	# Contact shadow, ground-targeted spell rings, and weapon trails are kept separate from the sprite.
 	draw_set_transform(Vector2(1.0, 8.0 + bob), 0.0, Vector2(1.42, 0.57))
-	draw_circle(Vector2.ZERO, 13.0, Color(0.005, 0.012, 0.02, 0.68))
+	draw_circle(Vector2.ZERO, 14.0, Color(0.005, 0.012, 0.02, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	# Action effects are drawn on the ground plane before the character.
 	if action_time > 0.0 and action_name == "burst":
 		var progress := 1.0 - action_time / action_duration
 		var radius := lerpf(20.0, 148.0, progress)
@@ -143,65 +160,18 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, radius * 0.82, 0.0, TAU, 48, Color(0.95, 0.68, 0.28, 0.68 * (1.0 - progress)), 2.0)
 
 	if energy >= max_energy - 0.1:
-		draw_arc(Vector2.ZERO, 26.0, 0.0, TAU, 36, Color(0.22, 0.86, 0.92, 0.55), 1.5)
+		draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 36, Color(0.22, 0.86, 0.92, 0.55), 1.5)
 	if perfect_counter_left > 0.0:
-		draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 36, Color(1.0, 0.79, 0.30, 0.95), 3.0)
+		draw_arc(Vector2.ZERO, 25.0, 0.0, TAU, 36, Color(1.0, 0.79, 0.30, 0.95), 3.0)
 	elif dodge_left > 0.0:
-		draw_arc(Vector2.ZERO, 24.0, 0.0, TAU, 32, Color(0.32, 0.94, 1.0, 0.90), 2.5)
+		draw_arc(Vector2.ZERO, 23.0, 0.0, TAU, 32, Color(0.32, 0.94, 1.0, 0.90), 2.5)
 
-	draw_set_transform(Vector2(0.0, bob), facing_direction.angle(), Vector2.ONE)
-	var cloak := Color(0.075, 0.15, 0.24)
-	var cloak_light := Color(0.17, 0.35, 0.43)
-	var armor := Color(0.24, 0.56, 0.62)
-	var gold := Color(0.92, 0.68, 0.30)
-	if hurt_flash_left > 0.0:
-		cloak = Color(0.72, 0.86, 0.85)
-		cloak_light = Color(0.92, 1.0, 0.96)
-		armor = Color(1.0, 1.0, 0.88)
-
-	# Wind-swept cloak, dark outline, layered tunic and shoulder armor.
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-9.0, -8.0), Vector2(-17.0, -2.0), Vector2(-20.0, 8.0),
-		Vector2(-10.0, 5.0), Vector2(-3.0, 13.0), Vector2(6.0, 8.0),
-		Vector2(8.0, -7.0), Vector2(1.0, -14.0)
-	]), Color(0.025, 0.045, 0.075))
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-9.0, -7.0), Vector2(-15.0, -2.0), Vector2(-16.0, 5.0),
-		Vector2(-9.0, 2.0), Vector2(-3.0, 10.0), Vector2(4.0, 6.0),
-		Vector2(5.0, -7.0), Vector2(0.0, -12.0)
-	]), cloak)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-5.0, -8.0), Vector2(0.0, -14.0), Vector2(8.0, -8.0),
-		Vector2(11.0, 1.0), Vector2(7.0, 9.0), Vector2(-5.0, 8.0),
-		Vector2(-10.0, 1.0)
-	]), cloak_light)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-4.0, -7.0), Vector2(1.0, -10.0), Vector2(7.0, -5.0),
-		Vector2(5.0, 5.0), Vector2(-4.0, 6.0), Vector2(-7.0, 0.0)
-	]), armor)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-4.0, -5.0), Vector2(1.0, -7.0), Vector2(4.0, -2.0),
-		Vector2(-1.0, 2.0), Vector2(-5.0, 0.0)
-	]), gold)
-	draw_circle(Vector2(0.0, -13.0), 6.0, Color(0.035, 0.065, 0.085))
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-6.0, -13.0), Vector2(-4.0, -19.0), Vector2(2.0, -20.0),
-		Vector2(7.0, -15.0), Vector2(3.0, -11.0), Vector2(-2.0, -11.0)
-	]), Color(0.12, 0.22, 0.26))
-	draw_line(Vector2(-4.0, -14.0), Vector2(3.0, -14.0), gold, 1.5)
-
-	# Sword and guard; it swings with the attack timer rather than being a static yellow bar.
-	var sword_offset := sin((1.0 - action_time / maxf(action_duration, 0.01)) * PI) * 15.0 if action_time > 0.0 and action_name == "slash" else 0.0
-	draw_line(Vector2(7.0, -2.0), Vector2(20.0 + sword_offset, -5.0), Color(0.035, 0.055, 0.07), 5.0)
-	draw_line(Vector2(8.0, -2.0), Vector2(21.0 + sword_offset, -5.0), Color(0.66, 0.86, 0.90), 3.0)
-	draw_line(Vector2(11.0, -1.0), Vector2(12.0, 4.0), gold, 2.5)
-	draw_circle(Vector2(21.0 + sword_offset, -5.0), 2.0, Color(0.96, 1.0, 0.87))
-
+	draw_set_transform(Vector2.ZERO, facing_direction.angle(), Vector2.ONE)
 	if action_time > 0.0 and action_name == "slash":
 		var progress := 1.0 - action_time / action_duration
-		draw_arc(Vector2(7.0, -3.0), 34.0, -1.12 + progress * 0.3, 1.12 + progress * 0.3, 28, Color(0.77, 0.99, 0.96, 0.90), 4.0)
-		draw_arc(Vector2(7.0, -3.0), 28.0, -0.90 + progress * 0.3, 0.90 + progress * 0.3, 24, Color(0.33, 0.82, 0.92, 0.75), 2.0)
+		draw_arc(Vector2(5.0, -1.0), 33.0, -1.05 + progress * 0.28, 1.05 + progress * 0.28, 28, Color(0.77, 0.99, 0.96, 0.94), 4.0)
+		draw_arc(Vector2(5.0, -1.0), 27.0, -0.86 + progress * 0.28, 0.86 + progress * 0.28, 24, Color(0.33, 0.82, 0.92, 0.72), 2.0)
 	elif action_time > 0.0 and action_name == "ranged":
-		draw_line(Vector2(15.0, -5.0), Vector2(42.0, -5.0), Color(0.31, 0.94, 0.93, 0.78), 2.5)
-
+		draw_line(Vector2(7.0, -4.0), Vector2(42.0, -4.0), Color(0.31, 0.94, 0.93, 0.82), 2.5)
+		draw_circle(Vector2(41.0, -4.0), 3.0, Color(0.85, 1.0, 0.94, 0.94))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
