@@ -271,7 +271,7 @@ func _spawn_enemy(forced_kind: String = "") -> void:
 	var kind := forced_kind if forced_kind != "" else _choose_enemy_kind()
 	var view_size := get_viewport_rect().size
 	var half_view := view_size * 0.5 + Vector2(42.0, 42.0)
-	var center := player.position if is_instance_valid(player) else WORLD_SIZE * 0.5
+	var center: Vector2 = player.position if is_instance_valid(player) else WORLD_SIZE * 0.5
 	var spawn_position := Vector2.ZERO
 	match randi_range(0, 3):
 		0:
