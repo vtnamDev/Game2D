@@ -45,7 +45,7 @@ func _run() -> void:
 	await create_timer(0.35).timeout
 	if not _check(main.kills == 1, "A projectile hitting a marked target should resolve the combo and defeat this test enemy."):
 		return
-	if not _check(marked_enemy.marked_time <= 0.0 or not is_instance_valid(marked_enemy), "A successful combo must consume the mark."):
+	if not _check(not is_instance_valid(marked_enemy) or marked_enemy.marked_time <= 0.0, "A successful combo must consume the mark."):
 		return
 
 	# Dodge during a nearby enemy telegraph should interrupt one strike and cause one counterattack.
