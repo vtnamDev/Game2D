@@ -9,6 +9,7 @@ signal skill_pressed
 signal ultimate_pressed
 signal ice_pressed
 signal lightning_pressed
+signal heal_pressed
 signal pause_pressed
 signal resume_requested
 signal restart_requested
@@ -27,7 +28,8 @@ var action_flash: Dictionary = {
 	"skill": 0.0,
 	"ultimate": 0.0,
 	"ice": 0.0,
-	"lightning": 0.0
+	"lightning": 0.0,
+	"heal": 0.0
 }
 
 const JOYSTICK_RADIUS := 54.0
@@ -100,7 +102,7 @@ func _handle_press(pointer_id: int, point: Vector2) -> void:
 			if _pause_rect().has_point(point):
 				pause_pressed.emit()
 				return
-			for action in ["melee", "shoot", "dodge", "skill", "ultimate", "ice", "lightning"]:
+			for action in ["melee", "shoot", "dodge", "skill", "ultimate", "ice", "lightning", "heal"]:
 				if _button_center(action).distance_to(point) <= _button_radius(action) + 7.0:
 					action_flash[action] = 0.16
 					queue_redraw()
@@ -119,6 +121,8 @@ func _handle_press(pointer_id: int, point: Vector2) -> void:
 							ice_pressed.emit()
 						"lightning":
 							lightning_pressed.emit()
+						"heal":
+							heal_pressed.emit()
 					return
 			if joystick_touch_id == -1 and point.x <= size.x * 0.43 and point.y >= size.y * 0.42:
 				joystick_touch_id = pointer_id
@@ -183,6 +187,8 @@ func _button_center(which: String) -> Vector2:
 			return Vector2(size.x - 235.0, size.y - 174.0)
 		"lightning":
 			return Vector2(size.x - 235.0, size.y - 260.0)
+		"heal":
+			return Vector2(size.x - 148.0, size.y - 260.0)
 	return Vector2.ZERO
 
 
@@ -201,6 +207,8 @@ func _button_radius(which: String) -> float:
 		"ice":
 			return 27.0
 		"lightning":
+			return 27.0
+		"heal":
 			return 27.0
 	return 30.0
 
@@ -357,6 +365,7 @@ func _draw_controls(font: Font) -> void:
 	_draw_action_button(font, "ultimate", "TUYỆT KỸ", Color(0.48, 0.31, 0.12), 0.0, 0.0, 100.0)
 	_draw_action_button(font, "ice", "BĂNG PHONG", Color(0.18, 0.42, 0.62), float(stats.get("ice_cd", 0.0)), 9.5, 28.0)
 	_draw_action_button(font, "lightning", "LÔI CHUỖI", Color(0.30, 0.35, 0.64), float(stats.get("lightning_cd", 0.0)), 10.0, 34.0)
+	_draw_action_button(font, "heal", "HỒI MÁU", Color(0.18, 0.52, 0.32), float(stats.get("heal_cd", 0.0)), 18.0, 30.0)
 
 	if message != "":
 		_draw_centered(font, message, Vector2(size.x * 0.5, size.y - 21.0), 13, Color(0.98, 0.87, 0.55))
@@ -370,12 +379,15 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 	var fill := base_color.darkened(0.52) if disabled else base_color
 	var flash := float(action_flash.get(action, 0.0))
 	if flash > 0.0:
-		fill = fill.lightened(0.38)
+		fill = fill.lightened(0.48)
 	draw_circle(center + Vector2(1.0, 4.0), radius + 3.0, Color(0.0, 0.0, 0.0, 0.48))
 	draw_circle(center, radius + 4.0, Color(0.035, 0.08, 0.10, 0.98))
 	draw_circle(center, radius, fill)
 	draw_arc(center, radius, 0.0, TAU, 40, Color(0.80, 0.96, 0.94, 0.98), 2.2)
-	draw_arc(center, radius - 4.0, -PI * 0.82, PI * 0.82, 36, Color(0.96, 0.78, 0.42, 0.45), 1.0)
+	draw_arc(center, radius - 4.0, -PI * 0.82, PI * 0.82, 36, Color(0.96, 0.78, 0.42, 0.58), 1.2)
+	if flash > 0.0:
+		var pulse_radius := radius + 6.0 + (0.16 - flash) * 34.0
+		draw_arc(center, pulse_radius, 0.0, TAU, 32, Color(0.84, 1.0, 0.93, clampf(flash / 0.16, 0.0, 1.0)), 2.0)
 
 	match action:
 		"melee":
@@ -414,9 +426,14 @@ func _draw_action_button(font: Font, action: String, title: String, base_color: 
 		"lightning":
 			draw_colored_polygon(PackedVector2Array([center + Vector2(3.0, -19.0), center + Vector2(-9.0, 1.0), center + Vector2(-1.0, 1.0), center + Vector2(-4.0, 18.0), center + Vector2(10.0, -4.0), center + Vector2(2.0, -4.0)]), Color(0.91, 0.96, 1.0))
 			draw_arc(center, 20.0, 0.0, TAU, 32, Color(0.66, 0.82, 1.0, 0.68), 1.4)
+		"heal":
+			draw_rect(Rect2(center + Vector2(-4.0, -16.0), Vector2(8.0, 32.0)), Color(0.92, 1.0, 0.90), true)
+			draw_rect(Rect2(center + Vector2(-16.0, -4.0), Vector2(32.0, 8.0)), Color(0.92, 1.0, 0.90), true)
+			draw_arc(center, 19.0, 0.0, TAU, 32, Color(0.72, 1.0, 0.76, 0.75), 1.5)
 
-	var label_size := 9 if action == "ice" or action == "lightning" else (10 if action == "skill" or action == "ultimate" or action == "shoot" else 11)
-	draw_string(font, Vector2(center.x - radius - 13.0, center.y + radius * 0.58), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 13.0) * 2.0, label_size, Color(0.97, 1.0, 0.97))
+	var label_size := 9 if action == "ice" or action == "lightning" else (10 if action == "skill" or action == "ultimate" or action == "shoot" or action == "heal" else 11)
+	# Keep labels below the glyph: long spell names must never be drawn across the icon.
+	draw_string(font, Vector2(center.x - radius - 18.0, center.y + radius + 12.0), title, HORIZONTAL_ALIGNMENT_CENTER, (radius + 18.0) * 2.0, label_size, Color(0.98, 1.0, 0.97))
 
 	if cooldown > 0.0 and max_cooldown > 0.0:
 		var remaining := clampf(cooldown / max_cooldown, 0.0, 1.0)
