@@ -52,7 +52,7 @@ func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
 	position = bounded_position
 	visual_refresh_left -= delta
 	if visual_refresh_left <= 0.0:
-		visual_refresh_left = 0.04
+		visual_refresh_left = 0.033
 		queue_redraw()
 
 
