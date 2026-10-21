@@ -171,7 +171,8 @@ func take_damage(amount: float) -> bool:
 
 func _draw() -> void:
 	var is_boss := enemy_kind == "boss"
-	var bob := sin(animation_clock * 3.0) * 0.7
+	var is_moving := velocity.length_squared() > 30.0
+	var bob := sin(animation_clock * (5.8 if enemy_kind == "stalker" else 3.2)) * (1.65 if is_moving else 0.50)
 	draw_set_transform(Vector2(1.0, 6.0 + bob), 0.0, Vector2(1.4 * visual_scale, 0.52 * visual_scale))
 	draw_circle(Vector2.ZERO, 14.0, Color(0.003, 0.008, 0.016, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -241,7 +242,9 @@ func _draw_enemy_body(bob: float) -> void:
 	elif windup_left > 0.0:
 		light_color = Color(1.0, 0.88, 0.36)
 
-	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE * visual_scale)
+	var anticipation := sin(animation_clock * 21.0) * 0.10 if windup_left > 0.0 else 0.0
+	var squash := 1.0 + (0.08 * (1.0 - clampf(windup_left / maxf(attack_windup, 0.01), 0.0, 1.0)) if windup_left > 0.0 else 0.0)
+	draw_set_transform(Vector2(0.0, bob), anticipation, Vector2(visual_scale * (1.0 + anticipation * 0.3), visual_scale * squash))
 
 	if enemy_kind == "stalker":
 		# Lean, many-legged silhouette for the fast hunter.
