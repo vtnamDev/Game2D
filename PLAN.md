@@ -1,6 +1,6 @@
 # Game2D — Kiếm Khí Truyền Thuyết
 
-**Trạng thái:** nhánh nâng cấp hình ảnh/gameplay đang được kiểm thử. Đây là project Godot, chưa phải APK Android đã xuất và xác nhận cài đặt.
+**Trạng thái:** bản mở rộng thế giới/chiến đấu đã vượt qua CI Godot 4.7.2 headless. Chưa phải APK Android đã xuất hoặc kiểm thử trên điện thoại.
 
 ## 1. Mục tiêu sản phẩm
 
@@ -12,9 +12,13 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 
 - Godot 4.7.2 Stable; GDScript.
 - Logical viewport 960 × 540, landscape, Compatibility renderer.
+- World size 2400 × 1600; Camera2D bám người chơi với giới hạn thế giới.
+- Minimap cập nhật vị trí người chơi, quái và chướng ngại.
+- 12 chướng ngại gỗ dùng StaticBody2D/RectangleShape2D thật.
+- Giới hạn 12 quái hoạt động, nền chỉ dựng ô gần camera và redraw nhân vật/quái được giới hạn tần suất để giảm tải.
 - Không yêu cầu PC, root, C#/.NET, plugin native, đăng nhập, server, quảng cáo hay giao dịch.
 - Nền, nhân vật, quái, phù văn, đạn và nút hành động hiện dùng hình học 2D tùy chỉnh. Đây là lớp đồ họa prototype có chủ ý; chưa phải bộ sprite pixel-art được vẽ thủ công theo từng frame hoặc bộ tài nguyên thương mại hoàn chỉnh.
-- Nhánh feature/vn-visual-combat được tách khỏi prototype/m1-combat để giữ lại bản đang chạy. Chỉ nhập PR sau khi kiểm tra CI và đánh giá thay đổi.
+- Nhánh feature/world-strategy-android-opt nằm trên nhánh sửa lỗi hiển thị; prototype/m1-combat được giữ nguyên. Chỉ nhập PR sau khi kiểm tra CI và đánh giá thay đổi.
 
 ## 3. Vòng chơi và chiến đấu
 
@@ -24,6 +28,8 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 - Đánh thường hồi một ít nội lực và gắn Kiếm Ấn. Kiếm Khí tự chọn mục tiêu còn sống gần nhất trong tầm và tiêu hao nội lực; đòn trúng mục tiêu có ấn kích nổ combo.
 - Lướt có hồi chiêu; lướt đúng lúc đòn đối thủ đang báo trước sẽ hủy đòn và phản kích.
 - Phá Trận gây sát thương diện rộng, tiêu hao nội lực và có hồi chiêu.
+- Băng Phong gây sát thương nhẹ và làm chậm quái gần người chơi trong 2,6 giây, tiêu hao 28 nội lực, hồi chiêu 9,5 giây; không cast nếu không có mục tiêu gần.
+- Lôi Chuỗi nảy sét qua tối đa bốn mục tiêu, tiêu hao 34 nội lực, hồi chiêu 10 giây; có thêm sát thương khi mục tiêu mang Kiếm Ấn; không cast nếu không có mục tiêu trong tầm.
 - Tuyệt Kỹ cần đủ 100 nội lực; tạo vùng tấn công diện rộng và một khoảng bảo vệ ngắn.
 - Nội lực hồi từ từ, từ đòn đánh thường, hạ quái và né hoàn hảo. Giao diện hiển thị thanh sinh lực, nội lực, hồi chiêu và trạng thái thiếu tài nguyên.
 - Lên cấp từ 8 kinh nghiệm, ngưỡng tăng thêm 3 mỗi lần nhằm hạn chế việc bảng chọn nâng cấp ngắt nhịp quá thường xuyên. Chọn một trong ba nâng cấp và tạm dừng chiến đấu trong lúc chọn.
@@ -40,6 +46,8 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 | Lướt | Né đòn, hồi chiêu khoảng 1,15 giây |
 | Phá Trận | Đòn diện rộng, tiêu hao 32 nội lực, hồi chiêu 7 giây |
 | Tuyệt Kỹ | Đòn diện rộng mạnh, tiêu hao 100 nội lực |
+| Băng Phong | Đánh vùng và làm chậm, 28 nội lực, hồi chiêu 9,5 giây |
+| Lôi Chuỗi | Nảy sét qua tối đa bốn mục tiêu, 34 nội lực, hồi chiêu 10 giây |
 | Tạm dừng | Dừng mô phỏng và mở menu |
 
 ## 5. Các cổng kiểm thử
