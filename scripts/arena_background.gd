@@ -28,9 +28,9 @@ func _draw() -> void:
 	var bottom := mini(ceili(WORLD_SIZE.y / TILE_H), ceili((center.y + view_size.y * 0.5) / TILE_H) + 2)
 
 	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.025, 0.036, 0.043), true)
+	var rng := RandomNumberGenerator.new()
 	for row in range(top, bottom):
 		for column in range(left, right):
-			var rng := RandomNumberGenerator.new()
 			rng.seed = int(abs(column * 73856093 + row * 19349663 + 734129))
 			var x := float(column * TILE_W)
 			var y := float(row * TILE_H)
