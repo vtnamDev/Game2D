@@ -7,6 +7,7 @@ const ProjectileScript = preload("res://scripts/projectile.gd")
 const PickupScript = preload("res://scripts/crystal_pickup.gd")
 const WoodObstacleScript = preload("res://scripts/wood_obstacle.gd")
 const LightningEffectScript = preload("res://scripts/lightning_effect.gd")
+const CombatFxScript = preload("res://scripts/combat_fx.gd")
 
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
 const RUN_DURATION := 480.0
@@ -28,6 +29,7 @@ const LIGHTNING_ENERGY_COST := 34.0
 
 var mode: String = "menu"
 var player: Variant
+var combat_fx: Variant
 var enemies: Array = []
 var pickups: Array = []
 var elapsed_seconds: float = 0.0
@@ -58,6 +60,10 @@ var ui_refresh_left: float = 0.0
 func _ready() -> void:
 	randomize()
 	_setup_wood_obstacles()
+	combat_fx = Node2D.new()
+	combat_fx.name = "CombatFX"
+	combat_fx.set_script(CombatFxScript)
+	$World.add_child(combat_fx)
 	controls.process_mode = Node.PROCESS_MODE_ALWAYS
 	controls.start_requested.connect(_start_run)
 	controls.melee_pressed.connect(_on_melee_pressed)
@@ -131,6 +137,9 @@ func _physics_process(delta: float) -> void:
 		if attack_resolved and not player.is_dodging():
 			var result: Dictionary = player.receive_damage(enemy.attack_damage)
 			if bool(result.get("applied", false)):
+				if is_instance_valid(combat_fx):
+					combat_fx.add_hit(player.position, Color(1.0, 0.20, 0.20))
+					combat_fx.play_sfx("hurt")
 				_set_message("BỊ TRÚNG ĐÒN  −%d SINH LỰC" % int(enemy.attack_damage), 0.85)
 				if bool(result.get("dead", false)):
 					_finish_run(false)
@@ -196,6 +205,8 @@ func _setup_wood_obstacles() -> void:
 
 func _start_run() -> void:
 	get_tree().paused = false
+	if is_instance_valid(combat_fx):
+		combat_fx.clear_effects()
 	for child in actors.get_children():
 		if child.is_in_group("arena_obstacle"):
 			continue
@@ -312,11 +323,19 @@ func _on_melee_pressed() -> void:
 	var target: Variant = CombatRules.nearest_target(enemies, player.position, MELEE_RANGE)
 	if target == null:
 		player.play_action("slash", player.position + player.facing_direction * 40.0)
+		if is_instance_valid(combat_fx):
+			combat_fx.add_slash(player.position, player.facing_direction)
+			combat_fx.play_sfx("swing")
 		player.restore_energy(2.0)
 		_set_message("CHÉM HỤT — ÁP SÁT KẺ ĐỊCH", 0.55)
 		return
 
 	player.play_action("slash", target.position)
+	if is_instance_valid(combat_fx):
+		combat_fx.add_slash(player.position, player.position.direction_to(target.position))
+		combat_fx.play_sfx("swing")
+	combat_fx.add_hit(target.position)
+	combat_fx.play_sfx("hit")
 	player.restore_energy(5.0)
 	target.mark(MELEE_MARK_DURATION + (1.2 if counter_relic_unlocked else 0.0))
 	_set_message("KIẾM ẤN ĐÃ GẮN — DÙNG KIẾM KHÍ ĐỂ KÍCH NỔ", 0.8)
@@ -344,6 +363,9 @@ func _on_shoot_pressed() -> void:
 	projectile.position = player.position + direction * 21.0
 	projectile.hit.connect(_on_projectile_hit)
 	actors.add_child(projectile)
+	if is_instance_valid(combat_fx):
+		combat_fx.add_slash(player.position, direction, Color(0.32, 0.92, 1.0))
+		combat_fx.play_sfx("shot")
 	shot_cooldown_left = 0.48
 	player.play_action("ranged", target.position)
 	_set_message("KIẾM KHÍ PHÓNG RA", 0.45)
@@ -360,6 +382,9 @@ func _on_skill_pressed() -> void:
 
 	skill_cooldown_left = 7.0
 	player.play_action("burst")
+	if is_instance_valid(combat_fx):
+		combat_fx.add_slam(player.position, 158.0)
+		combat_fx.play_sfx("slam")
 	var hit_count := 0
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
@@ -391,6 +416,9 @@ func _on_ice_pressed() -> void:
 		return
 	ice_cooldown_left = 9.5
 	player.play_action("ice")
+	if is_instance_valid(combat_fx):
+		combat_fx.add_ice(player.position, 188.0)
+		combat_fx.play_sfx("ice")
 	var affected := 0
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
@@ -448,6 +476,9 @@ func _on_lightning_pressed() -> void:
 	effect.set_script(LightningEffectScript)
 	effect.points = chain_points
 	actors.add_child(effect)
+	if is_instance_valid(combat_fx):
+		combat_fx.add_lightning(chain_points)
+		combat_fx.play_sfx("lightning")
 	player.play_action("lightning", chain_points[1])
 	_set_message("LÔI CHUỖI — %d MỤC TIÊU • %.0f SÁT THƯƠNG" % [hit_enemies.size(), total_damage], 1.1)
 
@@ -460,6 +491,9 @@ func _on_ultimate_pressed() -> void:
 		return
 
 	player.play_action("ultimate")
+	if is_instance_valid(combat_fx):
+		combat_fx.add_slam(player.position, 228.0, Color(0.40, 0.77, 1.0))
+		combat_fx.play_sfx("ultimate")
 	player.invulnerability_left = maxf(player.invulnerability_left, 0.72)
 	var hit_count := 0
 	for enemy in enemies.duplicate():
@@ -503,11 +537,17 @@ func _on_dodge_pressed() -> void:
 	if not player.begin_dodge(direction, perfect_target != null):
 		_set_message("LƯỚT ĐANG HỒI CHIÊU", 0.6)
 		return
+	if is_instance_valid(combat_fx):
+		combat_fx.add_dash(player.position, direction)
+		combat_fx.play_sfx("dash")
 
 	if perfect_target != null:
 		perfect_target.cancel_telegraphed_attack()
 		var damage: float = counter_damage + (10.0 if counter_relic_unlocked else 0.0)
 		player.restore_energy(22.0)
+		if is_instance_valid(combat_fx):
+			combat_fx.add_slash(perfect_target.position, player.position.direction_to(perfect_target.position), Color(1.0, 0.78, 0.31))
+			combat_fx.play_sfx("hit")
 		_set_message("NÉ HOÀN HẢO — PHẢN KÍCH!", 1.0)
 		_damage_enemy(perfect_target, damage)
 	else:
@@ -532,6 +572,8 @@ func _find_telegraphed_enemy() -> Variant:
 func _damage_enemy(enemy: Variant, amount: float) -> void:
 	if not is_instance_valid(enemy) or not enemy.alive:
 		return
+	if is_instance_valid(combat_fx):
+		combat_fx.add_hit(enemy.position, Color(1.0, 0.76, 0.38) if enemy.marked_time > 0.0 else Color(1.0, 0.43, 0.35))
 	if enemy.take_damage(amount):
 		_enemy_defeated(enemy)
 
@@ -541,6 +583,9 @@ func _enemy_defeated(enemy: Variant) -> void:
 		return
 	var defeated_kind: String = enemy.enemy_kind
 	var defeated_position: Vector2 = enemy.position
+	if is_instance_valid(combat_fx):
+		combat_fx.add_death(defeated_position, Color(1.0, 0.35, 0.32) if defeated_kind != "boss" else Color(0.85, 0.36, 1.0))
+		combat_fx.play_sfx("death")
 	var gained_xp: int = enemy.xp_reward
 	if enemies.has(enemy):
 		enemies.erase(enemy)
@@ -597,6 +642,9 @@ func _tick_pickups(delta: float) -> void:
 			pickup.position += to_player / distance * minf(260.0 * delta, distance)
 		if distance < 23.0:
 			var picked_amount: int = int(pickup.amount)
+			if is_instance_valid(combat_fx):
+				combat_fx.add_pickup(pickup.position)
+				combat_fx.play_sfx("pickup")
 			crystals += picked_amount
 			pickups.erase(pickup)
 			pickup.queue_free()
