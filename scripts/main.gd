@@ -4,14 +4,19 @@ const CombatRules = preload("res://scripts/combat_rules.gd")
 const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
 const ProjectileScript = preload("res://scripts/projectile.gd")
+const PickupScript = preload("res://scripts/crystal_pickup.gd")
 
-const RUN_DURATION := 300.0
-const MAX_ENEMIES := 26
-const MELEE_RANGE := 68.0
+const RUN_DURATION := 480.0
+const BOSS_SPAWN_TIME := 360.0
+const MAX_ENEMIES := 23
+const MELEE_RANGE := 67.0
 const RANGED_RANGE := 310.0
 const MELEE_MARK_DURATION := 3.0
-const COMBO_BONUS := 18.0
-const RELIC_COST := 20
+const COMBO_BONUS := 24.0
+const RELIC_COST := 35
+const RANGED_ENERGY_COST := 9.0
+const SKILL_ENERGY_COST := 32.0
+const ULTIMATE_ENERGY_COST := 100.0
 
 @onready var actors: Node2D = $World/Actors
 @onready var controls: Control = $UI/TouchControls
@@ -19,21 +24,24 @@ const RELIC_COST := 20
 var mode: String = "menu"
 var player: Variant
 var enemies: Array = []
+var pickups: Array = []
 var elapsed_seconds: float = 0.0
 var spawn_timer: float = 0.8
 var melee_cooldown_left: float = 0.0
 var shot_cooldown_left: float = 0.0
+var skill_cooldown_left: float = 0.0
 var xp: int = 0
-var xp_to_next_level: int = 3
+var xp_to_next_level: int = 8
 var kills: int = 0
 var crystals: int = 0
 var run_reward: int = 0
 var run_reward_claimed: bool = false
 var counter_relic_unlocked: bool = false
-var melee_damage: float = 22.0
-var ranged_damage: float = 12.0
+var boss_spawned: bool = false
+var melee_damage: float = 24.0
+var ranged_damage: float = 13.0
 var combo_bonus: float = COMBO_BONUS
-var counter_damage: float = 18.0
+var counter_damage: float = 25.0
 var projectile_range: float = RANGED_RANGE
 var message: String = ""
 var message_lifetime: float = 0.0
@@ -47,6 +55,8 @@ func _ready() -> void:
 	controls.melee_pressed.connect(_on_melee_pressed)
 	controls.shoot_pressed.connect(_on_shoot_pressed)
 	controls.dodge_pressed.connect(_on_dodge_pressed)
+	controls.skill_pressed.connect(_on_skill_pressed)
+	controls.ultimate_pressed.connect(_on_ultimate_pressed)
 	controls.pause_pressed.connect(_on_pause_pressed)
 	controls.resume_requested.connect(_on_resume_pressed)
 	controls.restart_requested.connect(_start_run)
@@ -54,7 +64,6 @@ func _ready() -> void:
 	controls.unlock_pressed.connect(_on_unlock_pressed)
 	_load_progress()
 	_sync_ui()
-	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -75,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	elapsed_seconds += delta
 	if elapsed_seconds >= RUN_DURATION:
 		elapsed_seconds = RUN_DURATION
-		_finish_run(true)
+		_finish_run(_alive_boss() == null)
 		return
 
 	if not is_instance_valid(player):
@@ -84,6 +93,7 @@ func _physics_process(delta: float) -> void:
 
 	melee_cooldown_left = maxf(0.0, melee_cooldown_left - delta)
 	shot_cooldown_left = maxf(0.0, shot_cooldown_left - delta)
+	skill_cooldown_left = maxf(0.0, skill_cooldown_left - delta)
 
 	var requested_move: Vector2 = controls.move_vector
 	var keyboard_move := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
@@ -91,25 +101,32 @@ func _physics_process(delta: float) -> void:
 		requested_move = keyboard_move
 	player.tick(delta, requested_move, _player_bounds())
 
+	if not boss_spawned and elapsed_seconds >= BOSS_SPAWN_TIME:
+		boss_spawned = true
+		_spawn_enemy("boss")
+		_set_message("TRÙM CUỐI XUẤT HIỆN — HẠ GỤC HẮN ĐỂ THẮNG!", 3.5)
+
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
 		_spawn_enemy()
 		var ramp := clampf(elapsed_seconds / RUN_DURATION, 0.0, 1.0)
-		spawn_timer = 1.65 - ramp * 0.60
+		spawn_timer = 1.78 - ramp * 0.52
 
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
 			continue
 		var attack_resolved: bool = enemy.tick(delta, player.position)
 		if attack_resolved and not player.is_dodging():
-			var result: Dictionary = player.receive_damage(10.0)
+			var result: Dictionary = player.receive_damage(enemy.attack_damage)
 			if bool(result.get("applied", false)):
-				_set_message("Hit taken: -10 HP", 1.0)
+				_set_message("BỊ TRÚNG ĐÒN  −%d SINH LỰC" % int(enemy.attack_damage), 0.85)
 				if bool(result.get("dead", false)):
 					_finish_run(false)
 					return
 		if mode != "playing":
 			break
+
+	_tick_pickups(delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -122,18 +139,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_shoot_pressed()
 		KEY_SHIFT:
 			_on_dodge_pressed()
+		KEY_E:
+			_on_skill_pressed()
+		KEY_Q:
+			_on_ultimate_pressed()
 		KEY_ESCAPE:
 			_on_pause_pressed()
-
-
-func _draw() -> void:
-	var viewport_size := get_viewport_rect().size
-	draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.035, 0.055, 0.065), true)
-	for x in range(20, int(viewport_size.x), 32):
-		draw_line(Vector2(float(x), 0.0), Vector2(float(x), viewport_size.y), Color(0.11, 0.15, 0.16, 0.55), 1.0)
-	for y in range(18, int(viewport_size.y), 32):
-		draw_line(Vector2(0.0, float(y)), Vector2(viewport_size.x, float(y)), Color(0.11, 0.15, 0.16, 0.55), 1.0)
-	draw_rect(Rect2(Vector2(18.0, 18.0), Vector2(viewport_size.x - 36.0, viewport_size.y - 36.0)), Color(0.34, 0.49, 0.48, 0.8), false, 2.0)
 
 
 func _start_run() -> void:
@@ -141,29 +152,32 @@ func _start_run() -> void:
 	for child in actors.get_children():
 		child.free()
 	enemies.clear()
+	pickups.clear()
 	player = null
 
 	elapsed_seconds = 0.0
 	spawn_timer = 0.8
 	melee_cooldown_left = 0.0
 	shot_cooldown_left = 0.0
+	skill_cooldown_left = 0.0
 	xp = 0
-	xp_to_next_level = 3
+	xp_to_next_level = 8
 	kills = 0
 	run_reward = 0
 	run_reward_claimed = false
-	melee_damage = 22.0
-	ranged_damage = 12.0
+	boss_spawned = false
+	melee_damage = 24.0
+	ranged_damage = 13.0
 	combo_bonus = COMBO_BONUS
-	counter_damage = 18.0
+	counter_damage = 25.0
 	projectile_range = RANGED_RANGE
 
 	player = _new_actor_body(PlayerScript, 1, 2, 12.0)
 	actors.add_child(player)
 	player.position = get_viewport_rect().size * 0.5
 	mode = "playing"
-	message = "Mark with MELEE, then SHOOT to detonate."
-	message_lifetime = 2.6
+	message = "ĐÁNH ĐẤU ĐỂ GẮN ẤN • KIẾM KHÍ KÍCH NỔ • NÉ ĐÚNG LÚC ĐỂ PHẢN KÍCH"
+	message_lifetime = 3.2
 	_sync_ui()
 
 
@@ -182,12 +196,14 @@ func _new_actor_body(actor_script: Script, layer: int, mask: int, collision_radi
 
 func _player_bounds() -> Rect2:
 	var viewport_size := get_viewport_rect().size
-	return Rect2(Vector2(28.0, 43.0), Vector2(maxf(1.0, viewport_size.x - 56.0), maxf(1.0, viewport_size.y - 142.0)))
+	return Rect2(Vector2(28.0, 42.0), Vector2(maxf(1.0, viewport_size.x - 56.0), maxf(1.0, viewport_size.y - 140.0)))
 
 
-func _spawn_enemy() -> void:
+func _spawn_enemy(forced_kind: String = "") -> void:
 	if enemies.size() >= MAX_ENEMIES or mode != "playing":
 		return
+
+	var kind := forced_kind if forced_kind != "" else _choose_enemy_kind()
 	var bounds := _player_bounds()
 	var spawn_position := Vector2.ZERO
 	match randi_range(0, 3):
@@ -200,25 +216,39 @@ func _spawn_enemy() -> void:
 		_:
 			spawn_position = Vector2(randf_range(bounds.position.x, bounds.end.x), bounds.end.y)
 
-	var enemy: Variant = _new_actor_body(EnemyScript, 2, 3, 12.0)
+	var radius := 23.0 if kind == "boss" else (16.0 if kind == "guardian" or kind == "elite" else 12.0)
+	var enemy: Variant = _new_actor_body(EnemyScript, 2, 3, radius)
 	enemy.position = spawn_position
-	var difficulty := clampf(elapsed_seconds / RUN_DURATION, 0.0, 1.0)
-	enemy.move_speed = 32.0 + difficulty * 8.0
+	enemy.configure_kind(kind, elapsed_seconds / RUN_DURATION)
 	actors.add_child(enemy)
 	enemies.append(enemy)
+
+
+func _choose_enemy_kind() -> String:
+	if elapsed_seconds >= 240.0 and randf() < 0.15:
+		return "elite"
+	if elapsed_seconds >= 150.0 and randf() < 0.24:
+		return "guardian"
+	if elapsed_seconds >= 75.0 and randf() < 0.25:
+		return "stalker"
+	return "shade"
 
 
 func _on_melee_pressed() -> void:
 	if mode != "playing" or melee_cooldown_left > 0.0 or not is_instance_valid(player):
 		return
-	melee_cooldown_left = 0.34
+	melee_cooldown_left = 0.36
 	var target: Variant = CombatRules.nearest_target(enemies, player.position, MELEE_RANGE)
 	if target == null:
-		_set_message("Melee missed - move closer.", 0.85)
+		player.play_action("slash", player.position + player.facing_direction * 40.0)
+		player.restore_energy(2.0)
+		_set_message("CHÉM HỤT — ÁP SÁT KẺ ĐỊCH", 0.55)
 		return
 
-	target.mark(MELEE_MARK_DURATION + (1.0 if counter_relic_unlocked else 0.0))
-	_set_message("EMBER MARK applied. Shoot that target.", 1.1)
+	player.play_action("slash", target.position)
+	player.restore_energy(5.0)
+	target.mark(MELEE_MARK_DURATION + (1.2 if counter_relic_unlocked else 0.0))
+	_set_message("KIẾM ẤN ĐÃ GẮN — DÙNG KIẾM KHÍ ĐỂ KÍCH NỔ", 0.8)
 	_damage_enemy(target, melee_damage)
 
 
@@ -227,9 +257,12 @@ func _on_shoot_pressed() -> void:
 		return
 	var target: Variant = CombatRules.nearest_target(enemies, player.position, projectile_range)
 	if target == null:
-		_set_message("No valid target in range - no shot fired.", 1.1)
+		_set_message("KHÔNG CÓ MỤC TIÊU TRONG TẦM", 0.7)
 		return
 	if shot_cooldown_left > 0.0:
+		return
+	if not player.spend_energy(RANGED_ENERGY_COST):
+		_set_message("THIẾU NỘI LỰC — DI CHUYỂN HOẶC ĐÁNH THƯỜNG ĐỂ HỒI", 1.0)
 		return
 
 	var projectile: Variant = Node2D.new()
@@ -240,8 +273,59 @@ func _on_shoot_pressed() -> void:
 	projectile.position = player.position + direction * 21.0
 	projectile.hit.connect(_on_projectile_hit)
 	actors.add_child(projectile)
-	shot_cooldown_left = 0.20
-	_set_message("Target acquired.", 0.55)
+	shot_cooldown_left = 0.48
+	player.play_action("ranged", target.position)
+	_set_message("KIẾM KHÍ PHÓNG RA", 0.45)
+
+
+func _on_skill_pressed() -> void:
+	if mode != "playing" or not is_instance_valid(player):
+		return
+	if skill_cooldown_left > 0.0:
+		return
+	if not player.spend_energy(SKILL_ENERGY_COST):
+		_set_message("PHÁ TRẬN CẦN 32 NỘI LỰC", 0.8)
+		return
+
+	skill_cooldown_left = 7.0
+	player.play_action("burst")
+	var hit_count := 0
+	for enemy in enemies.duplicate():
+		if not is_instance_valid(enemy) or not enemy.alive:
+			continue
+		if player.position.distance_to(enemy.position) > 158.0:
+			continue
+		var damage := 46.0
+		if enemy.marked_time > 0.0:
+			damage += combo_bonus * 0.65
+			enemy.set("marked_time", 0.0)
+		enemy.apply_knockback(enemy.position - player.position, 165.0)
+		_damage_enemy(enemy, damage)
+		hit_count += 1
+	_set_message("PHÁ TRẬN — TRÚNG %d MỤC TIÊU" % hit_count, 1.0)
+
+
+func _on_ultimate_pressed() -> void:
+	if mode != "playing" or not is_instance_valid(player):
+		return
+	if not player.spend_energy(ULTIMATE_ENERGY_COST):
+		_set_message("TUYỆT KỸ CHƯA ĐẦY NỘI LỰC", 0.8)
+		return
+
+	player.play_action("ultimate")
+	player.invulnerability_left = maxf(player.invulnerability_left, 0.72)
+	var hit_count := 0
+	for enemy in enemies.duplicate():
+		if not is_instance_valid(enemy) or not enemy.alive:
+			continue
+		if player.position.distance_to(enemy.position) > 228.0:
+			continue
+		enemy.cancel_telegraphed_attack()
+		enemy.apply_knockback(enemy.position - player.position, 270.0)
+		var damage := 135.0 if enemy.enemy_kind == "boss" else 165.0
+		_damage_enemy(enemy, damage)
+		hit_count += 1
+	_set_message("THIÊN KIẾM GIÁNG LÂM — %d MỤC TIÊU" % hit_count, 1.6)
 
 
 func _on_projectile_hit(target: Node2D, raw_damage: float) -> void:
@@ -251,9 +335,11 @@ func _on_projectile_hit(target: Node2D, raw_damage: float) -> void:
 	var damage := CombatRules.combo_damage(raw_damage, combo_bonus, marked)
 	if marked:
 		target.set("marked_time", 0.0)
-		_set_message("EMBER COMBO! +%.0f bonus damage" % combo_bonus, 1.0)
+		_set_message("KIẾM ẤN BÙNG NỔ! +%.0f SÁT THƯƠNG" % combo_bonus, 0.85)
 	else:
-		_set_message("Ranged hit: %.0f" % damage, 0.65)
+		_set_message("KIẾM KHÍ TRÚNG ĐÍCH: %.0f" % damage, 0.55)
+	if is_instance_valid(player):
+		player.restore_energy(2.0)
 	_damage_enemy(target, damage)
 
 
@@ -268,28 +354,29 @@ func _on_dodge_pressed() -> void:
 		else:
 			direction = player.last_move_direction
 	if not player.begin_dodge(direction, perfect_target != null):
-		_set_message("Dodge is cooling down.", 0.65)
+		_set_message("LƯỚT ĐANG HỒI CHIÊU", 0.6)
 		return
 
 	if perfect_target != null:
 		perfect_target.cancel_telegraphed_attack()
-		var damage: float = counter_damage + (8.0 if counter_relic_unlocked else 0.0)
-		_set_message("PERFECT DODGE - COUNTER!", 1.1)
+		var damage: float = counter_damage + (10.0 if counter_relic_unlocked else 0.0)
+		player.restore_energy(22.0)
+		_set_message("NÉ HOÀN HẢO — PHẢN KÍCH!", 1.0)
 		_damage_enemy(perfect_target, damage)
 	else:
-		_set_message("Dodge!", 0.55)
+		_set_message("LƯỚT TRÁNH ĐÒN", 0.5)
 
 
 func _find_telegraphed_enemy() -> Variant:
 	if not is_instance_valid(player):
 		return null
 	var best: Variant = null
-	var best_distance := 92.0
+	var best_distance := 124.0
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or not enemy.alive or enemy.windup_left <= 0.0:
 			continue
 		var distance: float = player.position.distance_to(enemy.position)
-		if distance <= best_distance:
+		if distance <= minf(best_distance, enemy.attack_range + 24.0):
 			best = enemy
 			best_distance = distance
 	return best
@@ -303,21 +390,77 @@ func _damage_enemy(enemy: Variant, amount: float) -> void:
 
 
 func _enemy_defeated(enemy: Variant) -> void:
+	if not is_instance_valid(enemy):
+		return
+	var defeated_kind: String = enemy.enemy_kind
+	var defeated_position: Vector2 = enemy.position
+	var gained_xp: int = enemy.xp_reward
 	if enemies.has(enemy):
 		enemies.erase(enemy)
-	if is_instance_valid(enemy):
-		enemy.queue_free()
+	enemy.queue_free()
 	kills += 1
-	xp += 1
-	_set_message("Enemy defeated. +1 XP", 0.75)
+	xp += gained_xp
+	if is_instance_valid(player):
+		player.restore_energy(5.0)
+
+	if defeated_kind == "boss":
+		crystals += 10
+		_save_progress()
+		_set_message("TRÙM ĐÃ BỊ TIÊU DIỆT — CHIẾN THẮNG!", 2.0)
+		_finish_run(true)
+		return
+
+	if defeated_kind == "elite":
+		if randf() < 0.68:
+			_spawn_crystal_pickup(defeated_position, randi_range(2, 3))
+	elif randf() < 0.07:
+		_spawn_crystal_pickup(defeated_position, 1)
+
 	if xp >= xp_to_next_level:
 		xp -= xp_to_next_level
-		xp_to_next_level += 1
+		xp_to_next_level += 3
 		mode = "upgrade"
 		get_tree().paused = true
-		message = "Level up: choose one upgrade."
+		message = "LÊN CẤP — CHỌN MỘT NÂNG CẤP"
 		message_lifetime = 0.0
 		_sync_ui()
+	else:
+		_set_message("HẠ GỤC KẺ ĐỊCH • +%d KINH NGHIỆM" % gained_xp, 0.7)
+
+
+func _spawn_crystal_pickup(at_position: Vector2, amount: int) -> void:
+	var pickup: Variant = Node2D.new()
+	pickup.set_script(PickupScript)
+	pickup.position = at_position
+	pickup.amount = amount
+	actors.add_child(pickup)
+	pickups.append(pickup)
+
+
+func _tick_pickups(delta: float) -> void:
+	if not is_instance_valid(player):
+		return
+	for pickup in pickups.duplicate():
+		if not is_instance_valid(pickup):
+			pickups.erase(pickup)
+			continue
+		var to_player: Vector2 = player.position - pickup.position
+		var distance := to_player.length()
+		if distance < 112.0 and distance > 0.01:
+			pickup.position += to_player / distance * minf(260.0 * delta, distance)
+		if distance < 23.0:
+			crystals += int(pickup.amount)
+			pickups.erase(pickup)
+			pickup.queue_free()
+			_save_progress()
+			_set_message("NHẶT ĐƯỢC %d TINH THẠCH" % int(pickup.amount), 0.8)
+
+
+func _alive_boss() -> Variant:
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.alive and enemy.enemy_kind == "boss":
+			return enemy
+	return null
 
 
 func _on_upgrade_selected(index: int) -> void:
@@ -326,17 +469,20 @@ func _on_upgrade_selected(index: int) -> void:
 	match index:
 		0:
 			melee_damage += 5.0
-			combo_bonus += 2.0
+			combo_bonus += 5.0
 		1:
 			ranged_damage += 4.0
-			projectile_range += 30.0
+			projectile_range += 35.0
+			player.energy_regen += 0.65
 		2:
-			player.max_health += 15.0
-			player.heal(15.0)
+			player.max_health += 20.0
+			player.heal(20.0)
+			player.max_energy += 10.0
+			player.restore_energy(10.0)
 
 	get_tree().paused = false
 	mode = "playing"
-	_set_message("Upgrade applied.", 0.8)
+	_set_message("ĐÃ ÁP DỤNG NÂNG CẤP", 0.8)
 	_sync_ui()
 
 
@@ -373,17 +519,17 @@ func _finish_run(won: bool) -> void:
 
 func _on_unlock_pressed() -> void:
 	if counter_relic_unlocked:
-		_set_message("Counter Relic is already unlocked.", 1.1)
+		_set_message("BẢO VẬT PHẢN KÍCH ĐÃ ĐƯỢC MỞ KHÓA", 1.0)
 		_sync_ui()
 		return
 	if crystals < RELIC_COST:
-		_set_message("Need 20 crystals to unlock the Counter Relic.", 1.2)
+		_set_message("CẦN 35 TINH THẠCH ĐỂ MỞ BẢO VẬT", 1.0)
 		_sync_ui()
 		return
 	crystals -= RELIC_COST
 	counter_relic_unlocked = true
 	_save_progress()
-	_set_message("Counter Relic unlocked permanently.", 1.2)
+	_set_message("ĐÃ MỞ KHÓA BẢO VẬT PHẢN KÍCH", 1.0)
 	_sync_ui()
 
 
@@ -404,7 +550,7 @@ func _save_progress() -> void:
 	save.set_value("progress", "counter_relic_unlocked", counter_relic_unlocked)
 	var error := save.save("user://progress.cfg")
 	if error != OK:
-		push_error("Could not save local progress. Error code: %d" % error)
+		push_error("Không thể lưu tiến trình. Mã lỗi: %d" % error)
 
 
 func _set_message(text: String, duration: float) -> void:
@@ -418,17 +564,24 @@ func _status() -> Dictionary:
 	return {
 		"health": player.health if is_instance_valid(player) else 100.0,
 		"max_health": player.max_health if is_instance_valid(player) else 100.0,
+		"energy": player.energy if is_instance_valid(player) else 100.0,
+		"max_energy": player.max_energy if is_instance_valid(player) else 100.0,
+		"energy_regen": player.energy_regen if is_instance_valid(player) else 5.0,
 		"time_left": time_left,
 		"xp": xp,
 		"xp_required": xp_to_next_level,
 		"kills": kills,
 		"crystals": crystals,
 		"run_reward": run_reward,
-		"unlocked_relic": counter_relic_unlocked
+		"unlocked_relic": counter_relic_unlocked,
+		"melee_cd": melee_cooldown_left,
+		"shoot_cd": shot_cooldown_left,
+		"skill_cd": skill_cooldown_left,
+		"dodge_cd": player.dodge_cooldown_left if is_instance_valid(player) else 0.0,
+		"boss_spawned": boss_spawned
 	}
 
 
 func _sync_ui() -> void:
 	if is_instance_valid(controls):
 		controls.set_game_state(mode, _status(), message)
-	queue_redraw()
