@@ -1,117 +1,109 @@
+
 extends Node2D
-## Camera-aware, low-cost stone arena. Only tiles near the camera are submitted for drawing.
+## One cached terrain texture keeps the large map cheap to render on low-end Android.
+## Props use an original, compact generated pixel-art atlas.
 
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
-const TILE_W := 64
-const TILE_H := 48
+const FLOOR_SCALE := 0.5
+const TILE_W := 32
+const TILE_H := 24
+const PROP_ATLAS: Texture2D = preload("res://assets/art/arena_props_atlas.png")
+const PROP_CELL := 64
 
-var _last_camera_cell := Vector2i(-999, -999)
+var floor_texture: Texture2D
 
 
-func _process(_delta: float) -> void:
-	var camera := get_viewport().get_camera_2d()
-	if not is_instance_valid(camera):
-		return
-	var camera_cell := Vector2i(floori(camera.global_position.x / TILE_W), floori(camera.global_position.y / TILE_H))
-	if camera_cell != _last_camera_cell:
-		_last_camera_cell = camera_cell
-		queue_redraw()
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	floor_texture = _build_floor_texture()
+	queue_redraw()
+
+
+func _build_floor_texture() -> Texture2D:
+	var image_width := int(WORLD_SIZE.x * FLOOR_SCALE)
+	var image_height := int(WORLD_SIZE.y * FLOOR_SCALE)
+	var image := Image.create(image_width, image_height, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.025, 0.036, 0.043, 1.0))
+	var rng := RandomNumberGenerator.new()
+
+	for row in range(ceili(float(image_height) / TILE_H)):
+		var y := row * TILE_H
+		var stagger := TILE_W / 2 if row % 2 == 0 else 0
+		for column in range(ceili(float(image_width) / TILE_W) + 1):
+			var x := column * TILE_W - stagger
+			if x + TILE_W < 0 or x >= image_width:
+				continue
+			rng.seed = int(abs(column * 73856093 + row * 19349663 + 734129))
+			var shade := rng.randf_range(-0.012, 0.014)
+			var stone := Color(0.067 + shade, 0.088 + shade, 0.098 + shade, 1.0)
+			var stone_shadow := Color(0.007, 0.012, 0.016, 1.0)
+			var stone_highlight := Color(0.18, 0.22, 0.23, 0.32)
+			var left := maxi(0, x + 2)
+			var top := y + 2
+			var right := mini(image_width, x + TILE_W - 2)
+			var bottom := mini(image_height, y + TILE_H - 2)
+			if right <= left or bottom <= top:
+				continue
+			image.fill_rect(Rect2i(left, top, right - left, bottom - top), stone)
+			# Chipped corners and varied seams create paving without thousands of draw calls.
+			image.set_pixel(left, top, stone_shadow)
+			image.set_pixel(mini(right - 1, left + 1), top, stone_shadow)
+			image.set_pixel(right - 1, top, stone_shadow)
+			image.set_pixel(left, bottom - 1, stone_shadow)
+			image.set_pixel(right - 1, bottom - 1, stone_shadow)
+			image.fill_rect(Rect2i(left + 2, top + 1, maxi(1, right - left - 5), 1), stone_highlight)
+			if rng.randf() < 0.10:
+				var crack_x := clampi(left + rng.randi_range(5, maxi(5, right - left - 7)), left, right - 1)
+				var crack_y := clampi(top + rng.randi_range(5, maxi(5, bottom - top - 5)), top, bottom - 1)
+				image.set_pixel(crack_x, crack_y, stone_shadow)
+				image.set_pixel(mini(right - 1, crack_x + 1), mini(bottom - 1, crack_y + 1), stone_shadow)
+			if rng.randf() < 0.13:
+				var moss_x := clampi(left + rng.randi_range(3, maxi(3, right - left - 4)), left, right - 1)
+				var moss_y := clampi(top + rng.randi_range(3, maxi(3, bottom - top - 4)), top, bottom - 1)
+				var moss_color := Color(0.095, 0.15, 0.09, 1.0)
+				image.set_pixel(moss_x, moss_y, moss_color)
+				image.set_pixel(mini(right - 1, moss_x + 1), moss_y, moss_color)
+
+	return ImageTexture.create_from_image(image)
 
 
 func _draw() -> void:
-	var camera := get_viewport().get_camera_2d()
-	var center: Vector2 = camera.global_position if is_instance_valid(camera) else WORLD_SIZE * 0.5
-	var view_size := get_viewport_rect().size
-	var left := maxi(0, floori((center.x - view_size.x * 0.5) / TILE_W) - 2)
-	var right := mini(ceili(WORLD_SIZE.x / TILE_W), ceili((center.x + view_size.x * 0.5) / TILE_W) + 2)
-	var top := maxi(0, floori((center.y - view_size.y * 0.5) / TILE_H) - 2)
-	var bottom := mini(ceili(WORLD_SIZE.y / TILE_H), ceili((center.y + view_size.y * 0.5) / TILE_H) + 2)
+	if floor_texture == null:
+		return
+	# The complete floor is a single texture submission; camera movement no longer rebuilds tile geometry.
+	draw_texture_rect(floor_texture, Rect2(Vector2.ZERO, WORLD_SIZE), false, Color.WHITE)
 
-	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.025, 0.036, 0.043), true)
-	var rng := RandomNumberGenerator.new()
-	for row in range(top, bottom):
-		for column in range(left, right):
-			rng.seed = int(abs(column * 73856093 + row * 19349663 + 734129))
-			var x := float(column * TILE_W)
-			var y := float(row * TILE_H)
-			var shade := rng.randf_range(-0.012, 0.014)
-			var chip := rng.randf_range(1.0, 5.0)
-			var points := PackedVector2Array([
-				Vector2(x + 4.0, y + 2.0),
-				Vector2(x + TILE_W - 5.0, y + 1.0 + chip * 0.2),
-				Vector2(x + TILE_W - 1.5, y + TILE_H * 0.38),
-				Vector2(x + TILE_W - 5.0, y + TILE_H - 3.0),
-				Vector2(x + 5.0 + chip, y + TILE_H - 1.5),
-				Vector2(x + 1.5, y + TILE_H * 0.58)
-			])
-			draw_colored_polygon(points, Color(0.006, 0.010, 0.014, 0.42))
-			draw_colored_polygon(points, Color(0.067 + shade, 0.088 + shade, 0.098 + shade))
-			draw_line(Vector2(x + 8.0, y + 4.0), Vector2(x + TILE_W - 10.0, y + 3.0 + chip * 0.2), Color(0.20, 0.25, 0.26, 0.15), 1.0)
+	# Opening chamber: large landmarks, braziers and rune platforms frame the player without blocking the combat lane.
+	_draw_prop(Vector2(835.0, 580.0), 0, Vector2(118.0, 126.0))
+	_draw_prop(Vector2(1570.0, 575.0), 0, Vector2(126.0, 132.0))
+	_draw_prop(Vector2(830.0, 1020.0), 0, Vector2(122.0, 128.0))
+	_draw_prop(Vector2(1570.0, 1028.0), 0, Vector2(130.0, 134.0))
+	_draw_prop(Vector2(1000.0, 580.0), 2, Vector2(64.0, 64.0))
+	_draw_prop(Vector2(1400.0, 580.0), 2, Vector2(64.0, 64.0))
+	_draw_prop(Vector2(1000.0, 1018.0), 2, Vector2(64.0, 64.0))
+	_draw_prop(Vector2(1400.0, 1018.0), 2, Vector2(64.0, 64.0))
+	_draw_prop(Vector2(1200.0, 510.0), 3, Vector2(126.0, 74.0))
+	_draw_prop(Vector2(1200.0, 1090.0), 3, Vector2(126.0, 74.0))
 
-			if rng.randf() < 0.10:
-				var crack := Vector2(x + rng.randf_range(10.0, TILE_W - 10.0), y + rng.randf_range(10.0, TILE_H - 10.0))
-				draw_line(crack, crack + Vector2(rng.randf_range(4.0, 12.0), rng.randf_range(2.0, 7.0)), Color(0.015, 0.026, 0.030, 0.9), 1.2)
-			if rng.randf() < 0.13:
-				var moss := Vector2(x + rng.randf_range(8.0, TILE_W - 8.0), y + rng.randf_range(8.0, TILE_H - 8.0))
-				draw_circle(moss, rng.randf_range(2.0, 4.0), Color(0.11, 0.18, 0.10, 0.42))
-			if rng.randf() < 0.08:
-				var debris := Vector2(x + rng.randf_range(10.0, TILE_W - 10.0), y + rng.randf_range(10.0, TILE_H - 10.0))
-				var debris_size := rng.randf_range(2.0, 5.0)
-				draw_colored_polygon(PackedVector2Array([debris + Vector2(-debris_size, 0.0), debris + Vector2(-1.0, -debris_size), debris + Vector2(debris_size, -1.0), debris + Vector2(debris_size * 0.7, 2.0), debris + Vector2(-debris_size * 0.6, debris_size)]), Color(0.19, 0.22, 0.22, 0.58))
+	# Additional region landmarks make exploration readable across the full map.
+	_draw_prop(Vector2(170.0, 150.0), 0, Vector2(132.0, 144.0))
+	_draw_prop(Vector2(2200.0, 170.0), 0, Vector2(140.0, 144.0))
+	_draw_prop(Vector2(190.0, 1440.0), 0, Vector2(136.0, 138.0))
+	_draw_prop(Vector2(2210.0, 1430.0), 0, Vector2(136.0, 138.0))
+	_draw_prop(Vector2(430.0, 280.0), 2, Vector2(56.0, 56.0))
+	_draw_prop(Vector2(1960.0, 340.0), 2, Vector2(56.0, 56.0))
+	_draw_prop(Vector2(390.0, 1300.0), 2, Vector2(56.0, 56.0))
+	_draw_prop(Vector2(1980.0, 1280.0), 2, Vector2(56.0, 56.0))
+	_draw_prop(Vector2(560.0, 790.0), 3, Vector2(80.0, 48.0))
+	_draw_prop(Vector2(1840.0, 810.0), 3, Vector2(80.0, 48.0))
+	_draw_prop(Vector2(1200.0, 210.0), 1, Vector2(138.0, 54.0))
+	_draw_prop(Vector2(1200.0, 1390.0), 1, Vector2(138.0, 54.0))
 
-	# A few fixed landmarks give the expanded map readable regions without lighting shaders.
-	_draw_ruin(Vector2(120.0, 115.0), 0.8)
-	_draw_ruin(Vector2(WORLD_SIZE.x - 120.0, 130.0), 0.9)
-	_draw_ruin(Vector2(145.0, WORLD_SIZE.y - 120.0), 0.85)
-	_draw_ruin(Vector2(WORLD_SIZE.x - 145.0, WORLD_SIZE.y - 125.0), 1.0)
-
-	# Starting clearing landmarks ensure the opening screen does not feel empty.
-	_draw_ruin(Vector2(820.0, 605.0), 0.76)
-	_draw_ruin(Vector2(1580.0, 610.0), 0.82)
-	_draw_ruin(Vector2(800.0, 1000.0), 0.78)
-	_draw_ruin(Vector2(1580.0, 1005.0), 0.86)
-	_draw_rune_altar(Vector2(1200.0, 552.0), 22.0)
-	_draw_rune_altar(Vector2(1200.0, 1048.0), 22.0)
-
-	# The perimeter is a real visual cue for the edge of the world.
-	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.32, 0.50, 0.48, 0.50), false, 3.0)
+	# The perimeter is visible even when the camera moves far from the start.
+	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.32, 0.50, 0.48, 0.54), false, 3.0)
 
 
-func _draw_rune_altar(center: Vector2, radius: float) -> void:
-	draw_set_transform(center + Vector2(2.0, 5.0), 0.0, Vector2(1.0, 0.46))
-	draw_circle(Vector2.ZERO, radius + 8.0, Color(0.003, 0.008, 0.011, 0.62))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_arc(center, radius + 5.0, 0.0, TAU, 32, Color(0.17, 0.34, 0.32, 0.7), 3.0)
-	draw_arc(center, radius, 0.0, TAU, 32, Color(0.28, 0.62, 0.53, 0.9), 1.8)
-	draw_arc(center, radius * 0.58, 0.0, TAU, 24, Color(0.39, 0.76, 0.64, 0.66), 1.2)
-	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(0.0, -radius * 0.58),
-		center + Vector2(radius * 0.42, 0.0),
-		center + Vector2(0.0, radius * 0.58),
-		center + Vector2(-radius * 0.42, 0.0)
-	]), Color(0.12, 0.38, 0.32, 0.7))
-	draw_circle(center, 3.0, Color(0.45, 0.94, 0.75, 0.9))
-
-func _draw_ruin(center: Vector2, scale_factor: float) -> void:
-	var half := Vector2(20.0, 25.0) * scale_factor
-	draw_set_transform(center + Vector2(3.0, 7.0), 0.0, Vector2(1.0, 0.48))
-	draw_circle(Vector2.ZERO, 30.0 * scale_factor, Color(0.004, 0.008, 0.012, 0.72))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(-half.x - 4.0, -half.y * 0.3),
-		center + Vector2(-half.x * 0.6, -half.y),
-		center + Vector2(half.x * 0.7, -half.y * 0.95),
-		center + Vector2(half.x + 4.0, -half.y * 0.25),
-		center + Vector2(half.x * 0.75, half.y * 0.4),
-		center + Vector2(-half.x * 0.7, half.y * 0.4)
-	]), Color(0.045, 0.066, 0.072))
-	draw_colored_polygon(PackedVector2Array([
-		center + Vector2(-half.x * 0.7, -half.y * 0.35),
-		center + Vector2(-half.x * 0.55, -half.y * 0.95),
-		center + Vector2(half.x * 0.30, -half.y * 0.84),
-		center + Vector2(half.x * 0.62, -half.y * 0.20),
-		center + Vector2(half.x * 0.42, half.y * 0.34),
-		center + Vector2(-half.x * 0.45, half.y * 0.34)
-	]), Color(0.17, 0.22, 0.23))
-	draw_line(center + Vector2(-half.x * 0.4, -half.y * 0.4), center + Vector2(-2.0, 3.0), Color(0.035, 0.052, 0.055), 2.0)
-	draw_circle(center + Vector2(-half.x * 0.3, -half.y * 0.65), 2.5 * scale_factor, Color(0.16, 0.65, 0.50, 0.64))
+func _draw_prop(center: Vector2, atlas_index: int, draw_size: Vector2) -> void:
+	var target := Rect2(center - draw_size * 0.5, draw_size)
+	var source := Rect2(float(atlas_index * PROP_CELL), 0.0, PROP_CELL, PROP_CELL)
+	draw_texture_rect_region(PROP_ATLAS, target, source, Color.WHITE, false, true)
