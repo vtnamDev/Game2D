@@ -200,7 +200,7 @@ func _player_bounds() -> Rect2:
 
 
 func _spawn_enemy(forced_kind: String = "") -> void:
-	if enemies.size() >= MAX_ENEMIES or mode != "playing":
+	if (enemies.size() >= MAX_ENEMIES and forced_kind != "boss") or mode != "playing":
 		return
 
 	var kind := forced_kind if forced_kind != "" else _choose_enemy_kind()
