@@ -113,6 +113,10 @@ func add_pickup(world_position: Vector2) -> void:
 	_spawn("pickup", world_position, Vector2.UP, Color(0.42, 1.0, 0.83), 18.0, 0.24)
 
 
+func add_heal(world_position: Vector2) -> void:
+	_spawn("heal", world_position, Vector2.UP, Color(0.42, 1.0, 0.67), 54.0, 0.64)
+
+
 func _spawn(kind: String, world_position: Vector2, direction: Vector2, color: Color, size: float, duration: float, points: PackedVector2Array = PackedVector2Array()) -> void:
 	if _effects.size() >= MAX_EFFECTS:
 		_effects.remove_at(0)
@@ -144,6 +148,7 @@ func _build_sound_bank() -> void:
 	_sounds["ultimate"] = _make_sound(0.34, 420.0, 45.0, 0.58, 9.0)
 	_sounds["death"] = _make_sound(0.17, 300.0, 72.0, 0.40, 10.0)
 	_sounds["pickup"] = _make_sound(0.10, 740.0, 1320.0, 0.04, 11.0)
+	_sounds["heal"] = _make_sound(0.34, 430.0, 1050.0, 0.07, 12.0)
 
 
 func _make_sound(duration: float, start_frequency: float, end_frequency: float, noise_mix: float, seed_value: float) -> AudioStreamWAV:
@@ -200,11 +205,13 @@ func _draw() -> void:
 				_draw_death(origin, color, radius, progress, fade)
 			"pickup":
 				_draw_pickup(origin, color, radius, progress, fade)
+			"heal":
+				_draw_heal(origin, color, radius, progress, fade)
 
 
 func _draw_slash(origin: Vector2, direction: Vector2, color: Color, radius: float, progress: float, fade: float) -> void:
 	draw_set_transform(origin, direction.angle(), Vector2.ONE)
-	draw_arc(Vector2(12.0, 0.0), radius, -1.15 + progress * 0.48, 1.35 + progress * 0.48, 26, Color(color.r, color.g, color.b, 0.24 * fade), 11.0)
+	draw_arc(Vector2(12.0, 0.0), radius, -1.15 + progress * 0.48, 1.35 + progress * 0.48, 26, Color(color.r, color.g, color.b, 0.42 * fade), 14.0)
 	draw_arc(Vector2(12.0, 0.0), radius, -1.15 + progress * 0.48, 1.35 + progress * 0.48, 26, Color(0.93, 1.0, 0.93, 0.94 * fade), 3.0)
 	draw_line(Vector2(2.0, -9.0), Vector2(30.0, 2.0), Color(1.0, 0.76, 0.42, 0.84 * fade), 1.8)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -250,7 +257,7 @@ func _draw_slam(origin: Vector2, color: Color, radius: float, progress: float, f
 
 func _draw_ice(origin: Vector2, color: Color, radius: float, progress: float, fade: float) -> void:
 	var ring_radius := lerpf(20.0, radius, progress)
-	draw_arc(origin, ring_radius, 0.0, TAU, 40, Color(color.r, color.g, color.b, 0.58 * fade), 3.0)
+	draw_arc(origin, ring_radius, 0.0, TAU, 40, Color(color.r, color.g, color.b, 0.84 * fade), 4.0)
 	draw_arc(origin, ring_radius * 0.83, progress, TAU - progress, 32, Color(0.77, 0.98, 1.0, 0.50 * fade), 1.5)
 	for shard_index in range(8):
 		var angle := TAU * float(shard_index) / 8.0
@@ -271,7 +278,7 @@ func _draw_lightning(points: PackedVector2Array, color: Color, fade: float) -> v
 		var p1 := from_point + delta_point * 0.30 + normal * (9.0 if segment_index % 2 == 0 else -8.0)
 		var p2 := from_point + delta_point * 0.67 + normal * (-7.0 if segment_index % 2 == 0 else 8.0)
 		var bolt := PackedVector2Array([from_point, p1, p2, to_point])
-		draw_polyline(bolt, Color(color.r, color.g, color.b, 0.34 * fade), 8.0, true)
+		draw_polyline(bolt, Color(color.r, color.g, color.b, 0.52 * fade), 10.0, true)
 		draw_polyline(bolt, Color(0.55, 0.91, 1.0, 0.94 * fade), 3.0, true)
 		draw_polyline(bolt, Color(0.95, 1.0, 1.0, 0.91 * fade), 1.1, true)
 
@@ -284,6 +291,22 @@ func _draw_death(origin: Vector2, color: Color, radius: float, progress: float, 
 		var center := origin + direction * radius * progress
 		var size := lerpf(4.0, 1.0, progress)
 		draw_colored_polygon(PackedVector2Array([center + direction * size, center + side * size * 0.65, center - direction * size, center - side * size * 0.65]), Color(color.r, color.g, color.b, 0.84 * fade))
+
+
+func _draw_heal(origin: Vector2, color: Color, radius: float, progress: float, fade: float) -> void:
+	var ring_radius := lerpf(12.0, radius, progress)
+	draw_arc(origin, ring_radius, 0.0, TAU, 36, Color(color.r, color.g, color.b, 0.90 * fade), 3.2)
+	draw_arc(origin, ring_radius * 0.68, -progress * 1.5, TAU - progress * 1.5, 30, Color(0.82, 1.0, 0.84, 0.82 * fade), 1.6)
+	for spark_index in range(7):
+		var angle := TAU * float(spark_index) / 7.0 + progress * 1.7
+		var direction := Vector2(cos(angle), sin(angle))
+		var inner := origin + direction * ring_radius * 0.32
+		var outer := origin + direction * (ring_radius * 0.48 + progress * 14.0)
+		draw_line(inner, outer, Color(0.62, 1.0, 0.78, 0.88 * fade), 2.0)
+	# Rising plus symbol clearly distinguishes healing from an attack.
+	var plus_center := origin + Vector2(0.0, -progress * 34.0)
+	draw_rect(Rect2(plus_center + Vector2(-2.5, -9.0), Vector2(5.0, 18.0)), Color(0.88, 1.0, 0.90, 0.95 * fade), true)
+	draw_rect(Rect2(plus_center + Vector2(-9.0, -2.5), Vector2(18.0, 5.0)), Color(0.88, 1.0, 0.90, 0.95 * fade), true)
 
 
 func _draw_pickup(origin: Vector2, color: Color, radius: float, progress: float, fade: float) -> void:
