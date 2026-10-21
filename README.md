@@ -11,7 +11,8 @@ Prototype hành động chiến thuật 2D góc nhìn từ trên xuống, viết
 - Bản đồ 2400 × 1600, camera bám kiếm khách, minimap hiện người chơi/quái/chướng ngại.
 - 12 rào gỗ có collider thật; nhân vật và quái có thể bị chặn đường.
 - Nền đá được vẽ theo vùng gần camera thay vì phải dựng chi tiết toàn bộ thế giới mỗi lần cập nhật.
-- Giới hạn 12 quái hoạt động đồng thời, thời gian sinh quái giãn hơn để giảm tải trên thiết bị yếu.
+- Giới hạn 12 quái hoạt động đồng thời, thời gian sinh quái giãn hơn, VFX dùng một node quản lý với tối đa 22 hiệu ứng ngắn, âm thanh dùng 6 voice tái sử dụng; sprite nhân vật/quái và joystick được giới hạn tần suất redraw khoảng 30 FPS.
+- Cụm nút được sắp xếp lại thành ba cột nhỏ hơn để giảm che khu vực chiến đấu; joystick thu gọn và cập nhật hình tối đa 30 FPS khi đang kéo.
 - Hình thể nhân vật/quái được vẽ bằng GDScript để có hình dự phòng ngay cả khi sprite texture gặp vấn đề; nền đá, rêu, tàn tích và gỗ là hình học procedural.
 - Có quái thường, quái nhanh, hộ vệ, tinh anh và trùm; mỗi loại có thông số sinh lực, tốc độ, sát thương và thời gian báo đòn khác nhau.
 - Lượt chơi tối đa 8 phút; trùm xuất hiện ở phút thứ 6. Hạ trùm để thắng; hết giờ mà trùm còn sống là thất bại.
@@ -29,6 +30,8 @@ Prototype hành động chiến thuật 2D góc nhìn từ trên xuống, viết
 | Lướt | Né đòn; lướt đúng lúc báo đòn có thể phản kích |
 | Phá Trận | Gây sát thương diện rộng; tốn 32 nội lực, hồi chiêu 7 giây |
 | Tuyệt Kỹ | Đòn diện rộng mạnh; yêu cầu đủ 100 nội lực |
+| Băng Phong | Gây sát thương nhẹ và làm chậm nhóm quái; tốn 28 nội lực |
+| Lôi Chuỗi | Sét nảy qua tối đa 4 mục tiêu, thưởng thêm sát thương lên mục tiêu có Kiếm Ấn; tốn 34 nội lực |
 | Băng Phong | Đánh nhẹ và làm chậm quái gần đó trong 2,6 giây; tốn 28 nội lực, hồi chiêu 9,5 giây |
 | Lôi Chuỗi | Sét nảy qua tối đa 4 mục tiêu; tốn 34 nội lực, hồi chiêu 10 giây |
 | Nút II | Tạm dừng |
@@ -54,7 +57,7 @@ CI thành công chỉ xác nhận các bước trên Linux headless. Nó **khôn
 3. Mở project và nhấn **Chạy**.
 4. Kiểm tra camera khi di chuyển, minimap, collider rào gỗ, phép Băng Phong/Lôi Chuỗi và các nút cảm ứng cùng lúc.
 
-Chưa có APK đã xuất và cài đặt kiểm thử trong repo. Không coi project chạy trong editor là bằng chứng rằng APK đã sẵn sàng.
+Chưa có APK đã xuất và cài đặt kiểm thử trong repo. Không coi project chạy trong editor là bằng chứng rằng APK đã sẵn sàng. Mục tiêu là giảm công việc mỗi khung hình; chưa có phép đo FPS trên ARMv7, vì vậy không cam kết một con số hiệu năng trước khi kiểm thử trên vivo V2120.
 
 ## Nguyên tắc phát triển
 
