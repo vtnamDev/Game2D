@@ -50,6 +50,17 @@ jobs:
           fi
           grep -F 'PASS: combat rules tests' /tmp/godot-tests.log
 
+      - name: Run scene integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GODOT_BIN" --headless --path . --script res://tests/test_scene_integration.gd 2>&1 | tee /tmp/godot-integration.log
+          if grep -E 'SCRIPT ERROR:|ERROR:|Parse Error:' /tmp/godot-integration.log; then
+            echo "::error::Godot reported integration-test errors."
+            exit 1
+          fi
+          grep -F 'PASS: scene integration tests' /tmp/godot-integration.log
+
       - name: Smoke-test the main scene
         shell: bash
         run: |
