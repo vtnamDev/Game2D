@@ -1,6 +1,6 @@
 # Game2D — Kiếm Khí Truyền Thuyết
 
-**Trạng thái:** bản mở rộng thế giới/chiến đấu đã vượt qua CI Godot 4.7.2 headless. Chưa phải APK Android đã xuất hoặc kiểm thử trên điện thoại.
+**Trạng thái:** bản sửa nền đen, biên di chuyển, nút hồi máu và quái mới đã vượt qua CI Godot 4.7.2 headless. Chưa phải APK Android đã xuất hoặc kiểm thử trên điện thoại.
 
 ## 1. Mục tiêu sản phẩm
 
@@ -15,7 +15,9 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 - World size 2400 × 1600; Camera2D bám người chơi với giới hạn thế giới.
 - Minimap cập nhật vị trí người chơi, quái và chướng ngại.
 - 12 chướng ngại gỗ dùng StaticBody2D/RectangleShape2D thật.
-- Giới hạn 8 quái hoạt động, nền chỉ dựng ô gần camera và redraw nhân vật/quái được giới hạn tần suất để giảm tải.
+- Giới hạn 10 quái hoạt động, VFX dùng một node quản lý tối đa 22 hiệu ứng, âm thanh dùng voice tái sử dụng, redraw nhân vật/quái có giới hạn tần suất.
+- Nền dùng tile SVG nhập sẵn lặp trên map thay cho texture lớn dựng lúc chạy; lớp nền màu được vẽ bên dưới làm fallback.
+- Bỏ vùng chặn di chuyển ẩn cách mép map nửa màn hình; nhân vật có thể đi gần biên thật của map.
 - Không yêu cầu PC, root, C#/.NET, plugin native, đăng nhập, server, quảng cáo hay giao dịch.
 - Nền, nhân vật, quái, phù văn, đạn và nút hành động hiện dùng hình học 2D tùy chỉnh. Đây là lớp đồ họa prototype có chủ ý; chưa phải bộ sprite pixel-art được vẽ thủ công theo từng frame hoặc bộ tài nguyên thương mại hoàn chỉnh.
 - Nhánh feature/world-strategy-android-opt nằm trên nhánh sửa lỗi hiển thị; prototype/m1-combat được giữ nguyên. Chỉ nhập PR sau khi kiểm tra CI và đánh giá thay đổi.
@@ -24,10 +26,11 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 
 - Một nhân vật kiếm khách, một đấu trường, đợt quái tăng áp lực theo thời gian.
 - Lượt chơi có giới hạn tối đa 8 phút; trùm xuất hiện ở phút thứ 6. Hạ trùm là điều kiện chiến thắng; hết giờ mà trùm còn sống là thất bại; sinh lực về 0 cũng là thất bại.
-- Quái thường, quỷ nhanh, hộ vệ, tinh anh và trùm có tốc độ, sinh lực, sát thương và thời gian báo đòn khác nhau.
+- Quái thường, quỷ nhanh, hộ vệ, pháp sư tầm xa, đấu sĩ hạng nặng, tinh anh và trùm có tốc độ, sinh lực, sát thương, tầm đánh và thời gian báo đòn khác nhau.
 - Đánh thường hồi một ít nội lực và gắn Kiếm Ấn. Kiếm Khí tự chọn mục tiêu còn sống gần nhất trong tầm và tiêu hao nội lực; đòn trúng mục tiêu có ấn kích nổ combo.
 - Lướt có hồi chiêu; lướt đúng lúc đòn đối thủ đang báo trước sẽ hủy đòn và phản kích.
 - Phá Trận gây sát thương diện rộng, tiêu hao nội lực và có hồi chiêu.
+- Hồi Máu phục hồi 32 sinh lực, tiêu hao 30 nội lực và hồi chiêu 18 giây. Nếu máu đầy hoặc thiếu nội lực thì không tiêu hao tài nguyên và không bật hồi chiêu.
 - Băng Phong gây sát thương nhẹ và làm chậm quái gần người chơi trong 2,6 giây, tiêu hao 28 nội lực, hồi chiêu 9,5 giây; không cast nếu không có mục tiêu gần.
 - Lôi Chuỗi nảy sét qua tối đa bốn mục tiêu, tiêu hao 34 nội lực, hồi chiêu 10 giây; có thêm sát thương khi mục tiêu mang Kiếm Ấn; không cast nếu không có mục tiêu trong tầm.
 - Tuyệt Kỹ cần đủ 100 nội lực; tạo vùng tấn công diện rộng và một khoảng bảo vệ ngắn.
@@ -46,6 +49,7 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 | Lướt | Né đòn, hồi chiêu khoảng 1,15 giây |
 | Phá Trận | Đòn diện rộng, tiêu hao 32 nội lực, hồi chiêu 7 giây |
 | Tuyệt Kỹ | Đòn diện rộng mạnh, tiêu hao 100 nội lực |
+| Hồi Máu | +32 sinh lực, −30 nội lực, hồi chiêu 18 giây |
 | Băng Phong | Đánh vùng và làm chậm, 28 nội lực, hồi chiêu 9,5 giây |
 | Lôi Chuỗi | Nảy sét qua tối đa bốn mục tiêu, 34 nội lực, hồi chiêu 10 giây |
 | Tạm dừng | Dừng mô phỏng và mở menu |
