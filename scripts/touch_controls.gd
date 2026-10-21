@@ -259,7 +259,7 @@ func _draw_menu(font: Font) -> void:
 	var relic_text := "BẢO VẬT PHẢN KÍCH — ĐÃ MỞ" if bool(stats.get("unlocked_relic", false)) else "MỞ BẢO VẬT PHẢN KÍCH • 35 TINH THẠCH"
 	_draw_button_rect(font, _unlock_rect(), relic_text)
 	_draw_centered(font, "Tinh thạch tích lũy: %d" % int(stats.get("crystals", 0)), Vector2(size.x * 0.5, size.y * 0.83), 15, Color(0.95, 0.78, 0.41))
-	_draw_centered(font, "Phím: mũi tên • Space: đánh • F: kiếm khí • Shift: lướt • E: phá trận • Q: tuyệt kỹ", Vector2(size.x * 0.5, size.y * 0.95), 11, Color(0.56, 0.69, 0.74))
+	_draw_centered(font, "Phím: mũi tên • Space: đánh • F: kiếm khí • Shift: lướt • E: phá trận • Q: tuyệt kỹ • R: băng • T: lôi", Vector2(size.x * 0.5, size.y * 0.95), 10, Color(0.56, 0.69, 0.74))
 
 
 func _draw_hud(font: Font) -> void:
