@@ -15,7 +15,7 @@ Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp 
 - World size 2400 × 1600; Camera2D bám người chơi với giới hạn thế giới.
 - Minimap cập nhật vị trí người chơi, quái và chướng ngại.
 - 12 chướng ngại gỗ dùng StaticBody2D/RectangleShape2D thật.
-- Giới hạn 12 quái hoạt động, nền chỉ dựng ô gần camera và redraw nhân vật/quái được giới hạn tần suất để giảm tải.
+- Giới hạn 8 quái hoạt động, nền chỉ dựng ô gần camera và redraw nhân vật/quái được giới hạn tần suất để giảm tải.
 - Không yêu cầu PC, root, C#/.NET, plugin native, đăng nhập, server, quảng cáo hay giao dịch.
 - Nền, nhân vật, quái, phù văn, đạn và nút hành động hiện dùng hình học 2D tùy chỉnh. Đây là lớp đồ họa prototype có chủ ý; chưa phải bộ sprite pixel-art được vẽ thủ công theo từng frame hoặc bộ tài nguyên thương mại hoàn chỉnh.
 - Nhánh feature/world-strategy-android-opt nằm trên nhánh sửa lỗi hiển thị; prototype/m1-combat được giữ nguyên. Chỉ nhập PR sau khi kiểm tra CI và đánh giá thay đổi.
