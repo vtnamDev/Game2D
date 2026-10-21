@@ -170,18 +170,20 @@ func _setup_wood_obstacles() -> void:
 			child.queue_free()
 
 	var layouts: Array[Dictionary] = [
+		# A loose ring around the starting clearing creates routes without boxing the hero in.
+		{"point": Vector2(0.44, 0.40), "length": 108.0, "angle": -0.25},
+		{"point": Vector2(0.67, 0.42), "length": 90.0, "angle": 1.45},
+		{"point": Vector2(0.36, 0.61), "length": 86.0, "angle": 1.52},
+		{"point": Vector2(0.70, 0.61), "length": 110.0, "angle": -0.20},
+		{"point": Vector2(0.51, 0.67), "length": 92.0, "angle": 0.15},
+		# Outer regions keep landmarks and cover distributed across the larger map.
 		{"point": Vector2(0.18, 0.22), "length": 106.0, "angle": -0.16},
-		{"point": Vector2(0.31, 0.34), "length": 76.0, "angle": 1.48},
-		{"point": Vector2(0.72, 0.18), "length": 90.0, "angle": 0.24},
-		{"point": Vector2(0.83, 0.33), "length": 74.0, "angle": 1.48},
-		{"point": Vector2(0.17, 0.51), "length": 84.0, "angle": 1.52},
-		{"point": Vector2(0.39, 0.51), "length": 92.0, "angle": -0.30},
-		{"point": Vector2(0.62, 0.46), "length": 80.0, "angle": 0.18},
-		{"point": Vector2(0.84, 0.58), "length": 104.0, "angle": -0.22},
-		{"point": Vector2(0.24, 0.75), "length": 88.0, "angle": -0.40},
-		{"point": Vector2(0.56, 0.79), "length": 96.0, "angle": 1.48},
-		{"point": Vector2(0.75, 0.84), "length": 70.0, "angle": 0.10},
-		{"point": Vector2(0.91, 0.78), "length": 82.0, "angle": 1.48}
+		{"point": Vector2(0.80, 0.22), "length": 90.0, "angle": 0.24},
+		{"point": Vector2(0.17, 0.50), "length": 84.0, "angle": 1.52},
+		{"point": Vector2(0.85, 0.50), "length": 74.0, "angle": 1.48},
+		{"point": Vector2(0.22, 0.79), "length": 88.0, "angle": -0.40},
+		{"point": Vector2(0.57, 0.83), "length": 96.0, "angle": 1.48},
+		{"point": Vector2(0.86, 0.82), "length": 82.0, "angle": 1.48}
 	]
 	for layout in layouts:
 		var obstacle: Variant = StaticBody2D.new()
