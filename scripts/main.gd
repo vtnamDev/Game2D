@@ -164,7 +164,7 @@ func _setup_wood_obstacles() -> void:
 		{"point": Vector2(0.31, 0.70), "length": 90.0, "angle": -0.32}
 	]
 	for layout in layouts:
-		var obstacle: StaticBody2D = StaticBody2D.new()
+		var obstacle: Variant = StaticBody2D.new()
 		obstacle.set_script(WoodObstacleScript)
 		obstacle.position = Vector2(viewport_size.x * layout["point"].x, viewport_size.y * layout["point"].y)
 		obstacle.rotation = float(layout["angle"])
