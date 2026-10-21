@@ -5,8 +5,8 @@ extends Node2D
 
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
 const FLOOR_SCALE := 0.5
-const TILE_W := 32
-const TILE_H := 24
+const TILE_W := 24
+const TILE_H := 18
 const PROP_ATLAS: Texture2D = preload("res://assets/art/arena_props_atlas.png")
 const PROP_CELL := 64
 
