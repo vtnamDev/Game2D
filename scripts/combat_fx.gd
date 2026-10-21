@@ -11,6 +11,7 @@ var _sounds: Dictionary = {}
 var _audio_players: Array[AudioStreamPlayer] = []
 var _audio_cursor: int = 0
 var _redraw_left: float = 0.0
+var _sound_cooldowns: Dictionary = {}
 
 
 func _ready() -> void:
@@ -25,6 +26,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	for sound_kind in _sound_cooldowns.keys():
+		var remaining: float = maxf(0.0, float(_sound_cooldowns[sound_kind]) - delta)
+		if remaining <= 0.0:
+			_sound_cooldowns.erase(sound_kind)
+		else:
+			_sound_cooldowns[sound_kind] = remaining
 	var changed := false
 	for index in range(_effects.size() - 1, -1, -1):
 		var effect: Dictionary = _effects[index]
@@ -46,6 +53,15 @@ func _process(delta: float) -> void:
 func play_sfx(kind: String) -> void:
 	if not _sounds.has(kind) or _audio_players.is_empty():
 		return
+	if float(_sound_cooldowns.get(kind, 0.0)) > 0.0:
+		return
+	match kind:
+		"death":
+			_sound_cooldowns[kind] = 0.085
+		"hit":
+			_sound_cooldowns[kind] = 0.035
+		"pickup":
+			_sound_cooldowns[kind] = 0.045
 	var audio_player: AudioStreamPlayer = _audio_players[_audio_cursor]
 	_audio_cursor = (_audio_cursor + 1) % _audio_players.size()
 	audio_player.stream = _sounds[kind] as AudioStreamWAV
@@ -57,6 +73,11 @@ func play_sfx(kind: String) -> void:
 		_:
 			audio_player.volume_db = -8.0
 	audio_player.play()
+
+
+func clear_effects() -> void:
+	_effects.clear()
+	queue_redraw()
 
 
 func add_slash(world_position: Vector2, direction: Vector2, color: Color = Color(0.66, 0.96, 1.0)) -> void:
