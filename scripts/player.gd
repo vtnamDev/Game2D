@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+const HERO_TEXTURE: Texture2D = preload("res://assets/art/hero_swordmaster.svg")
+
 var max_health: float = 100.0
 var health: float = 100.0
 var max_energy: float = 100.0
@@ -23,7 +25,7 @@ var visual_sprite: Sprite2D
 
 func _ready() -> void:
 	visual_sprite = Sprite2D.new()
-	visual_sprite.texture = load("res://assets/art/hero_swordmaster.svg") as Texture2D
+	visual_sprite.texture = HERO_TEXTURE
 	visual_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	visual_sprite.scale = Vector2(0.86, 0.86)
 	visual_sprite.show_behind_parent = true
