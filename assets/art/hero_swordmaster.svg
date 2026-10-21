@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <ellipse cx="30" cy="50" rx="20" ry="7" fill="#020810" opacity=".70"/>
+  <!-- sword, behind the fighter -->
+  <path d="M42 27h5v-4h5v-4h4v-3h4v4h-3v5h-4v4h-5v5h-4v-4h-3z" fill="#0a1824"/>
+  <path d="M45 24h5v-4h4v-3h3v3h-3v5h-4v4h-5z" fill="#8edce7"/>
+  <path d="M46 24h5v-4h3v3h-3v4h-5z" fill="#e7fff9"/>
+  <path d="M42 28h7v3h-7z" fill="#a56a35"/>
+  <path d="M44 26h3v7h-3z" fill="#f3bd58"/>
+  <!-- flowing cloak with stepped pixel silhouette -->
+  <path d="M21 19h5v-4h7v-2h7v4h5v5h4v8h-3v9h-4v7h-5v5H25v-4h-5v-7h-4v-8h-3v-8h5v-3h3z" fill="#050d19"/>
+  <path d="M21 22h5v-4h7v-2h6v4h5v5h4v6h-3v8h-4v6h-5v4H26v-4h-5v-7h-4v-7h-2v-5h6z" fill="#17364a"/>
+  <path d="M19 31h5v8h4v8h-5v-3h-4v-7h-3v-5h3z" fill="#0b1d30"/>
+  <path d="M25 42h6v4h-6zM33 44h6v4h-6z" fill="#276277"/>
+  <!-- boots -->
+  <path d="M24 44h7v7h-3v4h-8v-3h4z" fill="#07101c"/>
+  <path d="M34 44h7v6h4v4h-9v-3h-2z" fill="#07101c"/>
+  <path d="M21 52h7v2h-7zM36 52h8v2h-8z" fill="#d6a550"/>
+  <!-- armor and sash -->
+  <path d="M22 23h5v-3h11v3h5v7h-4v11h-4v4h-9v-4h-4V30h-3v-4h3z" fill="#071321"/>
+  <path d="M24 24h4v-2h9v3h4v6h-4v9h-3v3h-7v-4h-3V30h-3v-4h3z" fill="#2d6071"/>
+  <path d="M27 25h4v-2h5v3h4v5h-5v5h-6v-4h-3v-4h1z" fill="#4c99a1"/>
+  <path d="M28 34h7v3h-7zM26 38h10v3H26z" fill="#e5b45c"/>
+  <path d="M23 29h4v5h-4zM38 27h3v4h-3z" fill="#8dc6c5"/>
+  <!-- head, hair and brow guard -->
+  <path d="M24 13h4v-3h11v3h4v7h-3v5h-4v3h-7v-3h-4v-5h-3v-4h2z" fill="#050d17"/>
+  <path d="M27 13h4v-2h7v3h3v6h-3v4h-8v-3h-3z" fill="#d7a47b"/>
+  <path d="M25 14h5v-3h8v3h4v4h-5v-2h-5v3h-7z" fill="#18242b"/>
+  <path d="M26 19h4v2h-4zM37 19h3v2h-3z" fill="#f3e2ba"/>
+  <path d="M26 22h13v3h-4v2h-5v-2h-4z" fill="#172b39"/>
+  <path d="M29 25h6v2h-6z" fill="#b77851"/>
+  <!-- tassel and shoulder ornament -->
+  <path d="M40 22h4v4h-4zM42 26h2v5h-2z" fill="#d6a04c"/>
+  <path d="M22 25h4v4h-4z" fill="#8fd4d1"/>
+  <path d="M24 29h2v3h-2z" fill="#f2ca72"/>
+</svg>
