@@ -54,6 +54,10 @@ func _draw() -> void:
 			if rng.randf() < 0.13:
 				var moss := Vector2(x + rng.randf_range(8.0, TILE_W - 8.0), y + rng.randf_range(8.0, TILE_H - 8.0))
 				draw_circle(moss, rng.randf_range(2.0, 4.0), Color(0.11, 0.18, 0.10, 0.42))
+			if rng.randf() < 0.08:
+				var debris := Vector2(x + rng.randf_range(10.0, TILE_W - 10.0), y + rng.randf_range(10.0, TILE_H - 10.0))
+				var debris_size := rng.randf_range(2.0, 5.0)
+				draw_colored_polygon(PackedVector2Array([debris + Vector2(-debris_size, 0.0), debris + Vector2(-1.0, -debris_size), debris + Vector2(debris_size, -1.0), debris + Vector2(debris_size * 0.7, 2.0), debris + Vector2(-debris_size * 0.6, debris_size)]), Color(0.19, 0.22, 0.22, 0.58))
 
 	# A few fixed landmarks give the expanded map readable regions without lighting shaders.
 	_draw_ruin(Vector2(120.0, 115.0), 0.8)
@@ -61,9 +65,32 @@ func _draw() -> void:
 	_draw_ruin(Vector2(145.0, WORLD_SIZE.y - 120.0), 0.85)
 	_draw_ruin(Vector2(WORLD_SIZE.x - 145.0, WORLD_SIZE.y - 125.0), 1.0)
 
+	# Starting clearing landmarks ensure the opening screen does not feel empty.
+	_draw_ruin(Vector2(820.0, 605.0), 0.76)
+	_draw_ruin(Vector2(1580.0, 610.0), 0.82)
+	_draw_ruin(Vector2(800.0, 1000.0), 0.78)
+	_draw_ruin(Vector2(1580.0, 1005.0), 0.86)
+	_draw_rune_altar(Vector2(1200.0, 552.0), 22.0)
+	_draw_rune_altar(Vector2(1200.0, 1048.0), 22.0)
+
 	# The perimeter is a real visual cue for the edge of the world.
 	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.32, 0.50, 0.48, 0.50), false, 3.0)
 
+
+func _draw_rune_altar(center: Vector2, radius: float) -> void:
+	draw_set_transform(center + Vector2(2.0, 5.0), 0.0, Vector2(1.0, 0.46))
+	draw_circle(Vector2.ZERO, radius + 8.0, Color(0.003, 0.008, 0.011, 0.62))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	draw_arc(center, radius + 5.0, 0.0, TAU, 32, Color(0.17, 0.34, 0.32, 0.7), 3.0)
+	draw_arc(center, radius, 0.0, TAU, 32, Color(0.28, 0.62, 0.53, 0.9), 1.8)
+	draw_arc(center, radius * 0.58, 0.0, TAU, 24, Color(0.39, 0.76, 0.64, 0.66), 1.2)
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(0.0, -radius * 0.58),
+		center + Vector2(radius * 0.42, 0.0),
+		center + Vector2(0.0, radius * 0.58),
+		center + Vector2(-radius * 0.42, 0.0)
+	]), Color(0.12, 0.38, 0.32, 0.7))
+	draw_circle(center, 3.0, Color(0.45, 0.94, 0.75, 0.9))
 
 func _draw_ruin(center: Vector2, scale_factor: float) -> void:
 	var half := Vector2(20.0, 25.0) * scale_factor
