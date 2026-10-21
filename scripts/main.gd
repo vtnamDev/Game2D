@@ -11,7 +11,7 @@ const CombatFxScript = preload("res://scripts/combat_fx.gd")
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
 const RUN_DURATION := 480.0
 const BOSS_SPAWN_TIME := 360.0
-const MAX_ENEMIES := 12
+const MAX_ENEMIES := 8
 const MELEE_RANGE := 67.0
 const RANGED_RANGE := 310.0
 const MELEE_MARK_DURATION := 3.0
@@ -127,7 +127,7 @@ func _physics_process(delta: float) -> void:
 	if spawn_timer <= 0.0:
 		_spawn_enemy()
 		var ramp := clampf(elapsed_seconds / RUN_DURATION, 0.0, 1.0)
-		spawn_timer = 2.35 - ramp * 0.55
+		spawn_timer = 2.8 - ramp * 0.45
 
 	for enemy in enemies.duplicate():
 		if not is_instance_valid(enemy) or not enemy.alive:
