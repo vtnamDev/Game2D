@@ -32,6 +32,24 @@ func _refresh_sprite() -> void:
 func configure_kind(next_kind: String, difficulty: float) -> void:
 	enemy_kind = next_kind
 	match enemy_kind:
+		"hexer":
+			max_health = 49.0
+			move_speed = 33.0
+			attack_damage = 16.0
+			attack_range = 136.0
+			attack_windup = 0.78
+			attack_cooldown_duration = 1.22
+			xp_reward = 3
+			visual_scale = 1.06
+		"brute":
+			max_health = 148.0
+			move_speed = 25.0
+			attack_damage = 24.0
+			attack_range = 52.0
+			attack_windup = 0.72
+			attack_cooldown_duration = 1.32
+			xp_reward = 4
+			visual_scale = 1.42
 		"stalker":
 			max_health = 27.0
 			move_speed = 64.0
@@ -78,9 +96,11 @@ func configure_kind(next_kind: String, difficulty: float) -> void:
 			xp_reward = 1
 			visual_scale = 1.0
 
-	var health_scale := 1.0 + clampf(difficulty, 0.0, 1.0) * 0.28
+	var difficulty_ratio := clampf(difficulty, 0.0, 1.0)
+	var health_scale := 1.0 + difficulty_ratio * 0.38
 	max_health *= health_scale
-	move_speed += clampf(difficulty, 0.0, 1.0) * 5.0
+	move_speed += difficulty_ratio * 7.0
+	attack_damage *= 1.0 + difficulty_ratio * 0.22
 	health = max_health
 	attack_cooldown_left = randf_range(0.25, 0.75)
 	queue_redraw()
@@ -224,6 +244,12 @@ func _draw_enemy_body(bob: float) -> void:
 		"stalker":
 			body_color = Color(0.08, 0.30, 0.24)
 			light_color = Color(0.36, 0.91, 0.62)
+		"hexer":
+			body_color = Color(0.16, 0.19, 0.48)
+			light_color = Color(0.48, 0.82, 1.0)
+		"brute":
+			body_color = Color(0.42, 0.19, 0.075)
+			light_color = Color(1.0, 0.52, 0.22)
 		"guardian":
 			body_color = Color(0.19, 0.31, 0.39)
 			light_color = Color(0.66, 0.82, 0.87)
@@ -289,6 +315,16 @@ func _draw_enemy_body(bob: float) -> void:
 			draw_colored_polygon(PackedVector2Array([Vector2(-8.0, -3.0), Vector2(0.0, -8.0), Vector2(8.0, -3.0), Vector2(6.0, 7.0), Vector2(0.0, 10.0), Vector2(-6.0, 7.0)]), Color(0.29, 0.11, 0.12))
 		"stalker":
 			draw_colored_polygon(PackedVector2Array([Vector2(-5.0, -7.0), Vector2(-2.0, -15.0), Vector2(4.0, -12.0), Vector2(7.0, -6.0), Vector2(3.0, 3.0), Vector2(-5.0, 3.0)]), Color(0.09, 0.43, 0.31))
+		"brute":
+			draw_colored_polygon(PackedVector2Array([Vector2(-14.0, -5.0), Vector2(-22.0, -13.0), Vector2(-9.0, -11.0), Vector2(-5.0, -6.0)]), Color(0.18, 0.075, 0.035))
+			draw_colored_polygon(PackedVector2Array([Vector2(14.0, -5.0), Vector2(22.0, -13.0), Vector2(9.0, -11.0), Vector2(5.0, -6.0)]), Color(0.18, 0.075, 0.035))
+			draw_colored_polygon(PackedVector2Array([Vector2(-13.0, -2.0), Vector2(-8.0, -10.0), Vector2(-2.0, -7.0), Vector2(0.0, 2.0), Vector2(-8.0, 8.0)]), Color(0.26, 0.13, 0.065))
+			draw_colored_polygon(PackedVector2Array([Vector2(13.0, -2.0), Vector2(8.0, -10.0), Vector2(2.0, -7.0), Vector2(0.0, 2.0), Vector2(8.0, 8.0)]), Color(0.26, 0.13, 0.065))
+		"hexer":
+			draw_line(Vector2(-11.0, -7.0), Vector2(-16.0, 10.0), outline, 4.0)
+			draw_line(Vector2(-11.0, -7.0), Vector2(-16.0, 10.0), Color(0.41, 0.62, 0.84), 2.1)
+			draw_circle(Vector2(-16.0, 10.0), 4.0, Color(0.41, 0.83, 1.0, 0.88))
+			draw_arc(Vector2.ZERO, 21.0, animation_clock * 0.4, animation_clock * 0.4 + TAU * 0.68, 24, Color(0.35, 0.68, 1.0, 0.76), 1.7)
 		_:
 			draw_colored_polygon(PackedVector2Array([Vector2(-7.0, -8.0), Vector2(-4.0, -12.0), Vector2(5.0, -12.0), Vector2(8.0, -7.0), Vector2(4.0, 2.0), Vector2(-4.0, 2.0)]), Color(0.25, 0.055, 0.11))
 
