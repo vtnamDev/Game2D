@@ -323,7 +323,7 @@ func _spawn_enemy(forced_kind: String = "") -> void:
 	spawn_position.x = clampf(spawn_position.x, 28.0, WORLD_SIZE.x - 28.0)
 	spawn_position.y = clampf(spawn_position.y, 28.0, WORLD_SIZE.y - 28.0)
 
-	var radius := 23.0 if kind == "boss" else (16.0 if kind == "guardian" or kind == "elite" else 12.0)
+	var radius := 23.0 if kind == "boss" else (20.0 if kind == "brute" else (16.0 if kind == "guardian" or kind == "elite" else (13.0 if kind == "hexer" else 12.0)))
 	var enemy: Variant = _new_actor_body(EnemyScript, 2, 5, radius)
 	enemy.position = spawn_position
 	enemy.configure_kind(kind, elapsed_seconds / RUN_DURATION)
