@@ -1,117 +1,68 @@
-# Game2D — v0.1 development plan and acceptance contract
+# Game2D — Kiếm Khí Truyền Thuyết
 
-**Status:** first combat prototype is in a draft pull request. Headless Godot 4.7.2 CI passed for the latest observed gameplay-code commit; device acceptance and Android APK export remain pending.
+**Trạng thái:** nhánh nâng cấp hình ảnh/gameplay đang được kiểm thử. Đây là project Godot, chưa phải APK Android đã xuất và xác nhận cài đặt.
 
-## 1. Confirmed decisions
+## 1. Mục tiêu sản phẩm
 
-- Engine: Godot 4.7.2 Stable.
-- Script: GDScript only. No C#/.NET.
-- Game: 2D top-down fantasy arena survival, pixel-art direction, placeholder art first.
-- Target device: vivo V2120, Android 12. This is the only device included in v0.1 acceptance.
-- Orientation: landscape.
-- Controls: virtual joystick on the left; melee, ranged, and dodge buttons on the right.
-- Ranged targeting: on each shot press, choose the nearest alive enemy within range. If none is valid, do not create a projectile.
-- Signature mechanic A+B: melee marks an enemy; a ranged hit on a marked enemy triggers an elemental combo. Dodging during an enemy attack telegraph can interrupt it and trigger a counterattack.
-- A run lasts 300 seconds. Survive through 300 seconds to win; health reaching zero first means loss.
-- Level-up pauses the simulation and presents three upgrades; exactly one is applied.
-- Runs award local crystals; a permanent unlock can be purchased using crystals.
-- No mandatory Internet, login, server, ads, or in-app purchases in v0.1.
-- Project first; APK only after the toolchain and project are verified.
-- GitHub Actions/cloud build may be used. No desktop PC, root, or native plugin is assumed.
+Một game hành động chiến thuật 2D góc nhìn từ trên xuống, mỹ thuật pixel-art fantasy phương Đông pha dark fantasy. Ưu tiên hình dáng dễ đọc, hoạt ảnh có trọng lượng, phản hồi đòn đánh rõ, điều khiển thuận tiện bằng ngón cái và hiệu năng phù hợp với vivo V2120 / Android 12.
 
-## 2. Assumptions for the first prototype
+Tham chiếu cảm hứng: chất liệu, ánh sáng và không khí võ hiệp từ các game người chơi yêu thích; nhịp chiến đấu và quyết định dùng kỹ năng từ game hành động cạnh tranh. Không sao chép tài sản, nhân vật, mã nguồn hay thương hiệu của game khác.
 
-These are changeable implementation defaults, not separate user-approved design commitments:
+## 2. Kỹ thuật
 
-- One playable character, one basic enemy type, one compact arena.
-- One elemental mark and one combo reaction.
-- A marked enemy takes normal projectile damage plus a fixed combo bonus.
-- Enemy attacks use a visible wind-up ring so timing is learnable on a touchscreen.
-- Temporary custom-drawn shapes are used instead of artwork until control feel and combat logic work.
-- Initial numerical settings (attack range, mark duration, dodge window, enemy speed/health, spawn interval, combo damage) are tuning variables. They must be checked on device and may change.
-- A small local save records crystals and the permanent Counter Relic unlock.
+- Godot 4.7.2 Stable; GDScript.
+- Logical viewport 960 × 540, landscape, Compatibility renderer.
+- Không yêu cầu PC, root, C#/.NET, plugin native, đăng nhập, server, quảng cáo hay giao dịch.
+- Nền, nhân vật, quái, phù văn, đạn và nút hành động hiện dùng hình học 2D tùy chỉnh. Đây là lớp đồ họa prototype có chủ ý; chưa phải bộ sprite pixel-art được vẽ thủ công theo từng frame hoặc bộ tài nguyên thương mại hoàn chỉnh.
+- Nhánh feature/vn-visual-combat được tách khỏi prototype/m1-combat để giữ lại bản đang chạy. Chỉ nhập PR sau khi kiểm tra CI và đánh giá thay đổi.
 
-## 3. Implemented candidate behavior on the prototype branch
+## 3. Vòng chơi và chiến đấu
 
-The code on \`prototype/m1-combat\` currently includes:
+- Một nhân vật kiếm khách, một đấu trường, đợt quái tăng áp lực theo thời gian.
+- Lượt chơi có giới hạn tối đa 8 phút; trùm xuất hiện ở phút thứ 6. Hạ trùm là điều kiện chiến thắng; hết giờ mà trùm còn sống là thất bại; sinh lực về 0 cũng là thất bại.
+- Quái thường, quỷ nhanh, hộ vệ, tinh anh và trùm có tốc độ, sinh lực, sát thương và thời gian báo đòn khác nhau.
+- Đánh thường hồi một ít nội lực và gắn Kiếm Ấn. Kiếm Khí tự chọn mục tiêu còn sống gần nhất trong tầm và tiêu hao nội lực; đòn trúng mục tiêu có ấn kích nổ combo.
+- Lướt có hồi chiêu; lướt đúng lúc đòn đối thủ đang báo trước sẽ hủy đòn và phản kích.
+- Phá Trận gây sát thương diện rộng, tiêu hao nội lực và có hồi chiêu.
+- Tuyệt Kỹ cần đủ 100 nội lực; tạo vùng tấn công diện rộng và một khoảng bảo vệ ngắn.
+- Nội lực hồi từ từ, từ đòn đánh thường, hạ quái và né hoàn hảo. Giao diện hiển thị thanh sinh lực, nội lực, hồi chiêu và trạng thái thiếu tài nguyên.
+- Lên cấp từ 8 kinh nghiệm, ngưỡng tăng thêm 3 mỗi lần nhằm hạn chế việc bảng chọn nâng cấp ngắt nhịp quá thường xuyên. Chọn một trong ba nâng cấp và tạm dừng chiến đấu trong lúc chọn.
+- Quái thường có 7% cơ hội rơi một tinh thạch. Tinh anh có 68% cơ hội rơi 2–3 tinh thạch. Trùm thưởng 10 tinh thạch. Tinh thạch được hút về khi người chơi đến gần và tiến trình lưu cục bộ.
+- Bảo Vật Phản Kích có giá 35 tinh thạch và được lưu vĩnh viễn.
 
-1. Menu and start/restart flow.
-2. Landscape arena drawn with simple shapes.
-3. CharacterBody2D player/enemies with circular collision shapes.
-4. Touch joystick with dead zone and multi-pointer input, plus three action buttons.
-5. Melee damage and an Ember Mark.
-6. One target-seeking projectile per valid shoot action, using the nearest valid target.
-7. No projectile and no shot cooldown when no valid target exists.
-8. Projectile hit on a marked enemy consumes the mark and adds combo damage.
-9. Enemy telegraph, dodge invulnerability, and counterattack on a dodge during a nearby telegraph.
-10. XP, a level-up screen with three choices, and paused combat until selection.
-11. 300-second win / zero-health loss and once-per-run crystal rewards.
-12. Local save for crystals and a permanent Counter Relic unlock.
-13. Combat-rule tests for nearest target, range/dead-target rejection, combo damage and reward calculations.
-14. Scene integration tests for no-target shooting, melee-mark/ranged-combo, perfect-dodge counter, level-up pause/resume and one-time reward payment.
-15. GitHub Actions checks for Godot 4.7.2 import/parse, both test scripts, and main-scene startup.
+## 4. Điều khiển
 
-The latest observed successful CI run is [here](https://github.com/vtnamDev/Game2D/actions/runs/39566039133) for gameplay-code commit \`537c8e8\`. This is a headless Linux result—not device or APK acceptance. Check the Actions page for subsequent commits.
+| Nút | Tác dụng |
+|---|---|
+| Joystick trái | Di chuyển 8 hướng |
+| Đánh | Cận chiến, gắn Kiếm Ấn và hồi một ít nội lực |
+| Kiếm Khí | Tự nhắm kẻ địch gần nhất trong tầm, tiêu hao 9 nội lực |
+| Lướt | Né đòn, hồi chiêu khoảng 1,15 giây |
+| Phá Trận | Đòn diện rộng, tiêu hao 32 nội lực, hồi chiêu 7 giây |
+| Tuyệt Kỹ | Đòn diện rộng mạnh, tiêu hao 100 nội lực |
+| Tạm dừng | Dừng mô phỏng và mở menu |
 
-## 4. Acceptance gates
+## 5. Các cổng kiểm thử
 
-### Gate A — source integrity and headless startup
-- \`project.godot\` and the main scene exist at the repository root/declared path.
-- All script and scene references resolve.
-- Godot 4.7.2 headless import and main-scene startup pass.
-- Combat-rule and scene integration tests pass.
-- No engine output with a script parser error or missing resource.
+### Cổng A — mã nguồn và khởi động
+- Godot 4.7.2 import/parse không có lỗi.
+- Kiểm thử luật chiến đấu và luồng scene vượt qua.
+- Main scene headless khởi động thành công.
 
-### Gate B — controls and combat on vivo V2120
-- Landscape layout remains usable on the actual screen.
-- Joystick returns to neutral on release; simultaneous joystick and button input works.
-- Melee only hits in range and applies a mark.
-- The nearest living target in range is chosen; no valid target means no shot.
-- Marked projectile hit consumes the mark and applies bonus damage exactly once.
-- Dodge outside a telegraph is a normal dodge. Dodge during a nearby telegraph cancels the attack and applies one counter.
-- Pause and upgrade selection genuinely pause the simulation.
-- No controls overlap each other or the gameplay-critical UI.
+### Cổng B — cảm ứng và chiến đấu trên điện thoại
+- Joystick hồi về trung tính khi nhả; có thể giữ joystick đồng thời bấm nút khác.
+- Hồi chiêu, năng lượng, nút thiếu nội lực và báo đòn đọc được trên màn hình thật.
+- Không có nút đè lên nhau hoặc ra khỏi vùng an toàn.
 
-### Gate C — complete run and persistent progression
-- A run starts at 300 seconds and can end in either win or loss.
-- The level-up screen offers three choices, applies one, then resumes the run.
-- Rewards are issued at most once per run.
-- The crystal count and Counter Relic unlock survive application restart.
-- Restart resets run state but retains permanent progression.
-- Offline play works.
+### Cổng C — lượt chơi và lưu
+- Trùm, thắng/thua, nâng cấp, phần thưởng và tinh thạch hoạt động đúng; không trả thưởng hai lần.
+- Lưu cục bộ còn tồn tại sau khi đóng/mở ứng dụng và khi offline.
 
-### Gate D — stability and performance
-- Run ten manual attempts with no crash or progression-blocking issue.
-- Complete one ten-minute session without unexplained memory growth or severe thermal/stutter symptoms.
-- FPS and frame-time behavior are measured both in a quiet arena and at maximum tested enemy load.
-- Initial target: 60 FPS when lightly loaded; under stress, keep the game playable and aim for at least 30 FPS. These are targets to measure, not guarantees.
-- Record device temperature, battery level, memory, enemy count, renderer and resolution with the measurements.
-- No arbitrary APK size or latency threshold is claimed until measured.
+### Cổng D — hiệu năng / APK
+- Đo FPS theo tải, frame time, bộ nhớ, nhiệt độ và pin trên vivo V2120.
+- Xuất APK bằng export template phù hợp Godot 4.7.2, kiểm tra ABI và cài đặt thật.
+- Mục tiêu sơ bộ: gần 60 FPS ở tải nhẹ và không dưới 30 FPS trong cảnh áp lực; đây là mục tiêu cần đo, không phải kết quả đã đạt.
 
-### Gate E — Android export
-- Confirm export templates and Android export behavior for the installed Godot 4.7.2 editor.
-- If cloud building is needed, confirm the job uses a compatible official engine/template and correct Android ABI configuration.
-- Install and launch a real generated APK on vivo V2120.
-- Verify ARMv7/armeabi-v7a compatibility from the actual artifact; do not infer it from the Android editor APK's ABI.
-- Save the export log, APK metadata, commit SHA, install result and smoke-test result.
+## 6. Quy tắc trung thực
 
-## 5. Sequence and stop conditions
-
-1. Review this branch and run the automated Godot checks.
-2. Fix every parser/import/runtime issue before adding more features.
-3. Import the branch into Godot Android and test controls and A+B in a short session.
-4. Fix the combat feel and touch layout before balancing five-minute difficulty.
-5. Run the complete-loop tests, save/reload tests and ten attempts.
-6. Measure performance; lower enemy cap/effects if necessary.
-7. Only then validate the APK export pipeline.
-8. Add original/AI/licensed artwork and audio after the gray-box experience passes.
-
-Stop feature work if an error prevents starting or finishing a run. Do not mask a failed test by editing the checklist to "pass"; save the error and fix the underlying cause.
-
-## 6. Known risks
-
-- Godot 4.7.2 headless CI has passed on the latest observed gameplay-code commit, but touch behavior, visual layout, device performance, saving on process death and APK export are not yet verified.
-- Android editor and APK export are separate workflows. The export templates and ABI must be verified independently.
-- The target device's measured FPS, available memory under load, thermals, input latency and APK export capability are unknown.
-- A telegraph-based perfect dodge may be too easy or too difficult; the window and distance must be tuned by playtesting.
-- The first build uses a deliberately small enemy set. Multiple enemy archetypes, maps, deep skill trees, audio polish and store release are not first-gate requirements.
+CI headless không xác nhận cảm giác điều khiển, hiệu năng, nhiệt độ, pin, hành vi cảm ứng hay APK. Không tuyên bố các cổng B/C/D đạt cho đến khi có bằng chứng trên điện thoại. Tài nguyên có giấy phép chưa rõ không được nhập vào repo.
