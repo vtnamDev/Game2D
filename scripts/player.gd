@@ -16,7 +16,9 @@ var perfect_counter_left: float = 0.0
 var animation_clock: float = 0.0
 var action_name: String = ""
 var action_time: float = 0.0
+var action_target_position: Vector2 = Vector2.ZERO
 var action_duration: float = 0.25
+var visual_refresh_left: float = 0.0
 var hurt_flash_left: float = 0.0
 func _ready() -> void:
 	# The hero is drawn by this node so it remains visible even if mobile SVG import fails.
@@ -48,7 +50,10 @@ func tick(delta: float, requested_move: Vector2, bounds: Rect2) -> void:
 	bounded_position.x = clampf(bounded_position.x, bounds.position.x, bounds.end.x)
 	bounded_position.y = clampf(bounded_position.y, bounds.position.y, bounds.end.y)
 	position = bounded_position
-	queue_redraw()
+	visual_refresh_left -= delta
+	if visual_refresh_left <= 0.0:
+		visual_refresh_left = 0.04
+		queue_redraw()
 
 
 func begin_dodge(direction: Vector2, is_perfect: bool) -> bool:
@@ -72,6 +77,7 @@ func begin_dodge(direction: Vector2, is_perfect: bool) -> bool:
 
 func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -> void:
 	action_name = next_action
+	action_target_position = target_position
 	match next_action:
 		"slash":
 			action_duration = 0.26
@@ -81,6 +87,10 @@ func play_action(next_action: String, target_position: Vector2 = Vector2.ZERO) -
 			action_duration = 0.58
 		"ultimate":
 			action_duration = 0.88
+		"ice":
+			action_duration = 0.58
+		"lightning":
+			action_duration = 0.28
 		"dodge":
 			action_duration = 0.22
 		_:
@@ -135,7 +145,17 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hero_body(bob)
 
-	if action_time > 0.0 and action_name == "burst":
+	if action_time > 0.0 and action_name == "ice":
+		var ice_progress := 1.0 - action_time / action_duration
+		var ice_radius := lerpf(28.0, 188.0, ice_progress)
+		draw_arc(Vector2.ZERO, ice_radius, ice_progress, TAU + ice_progress, 48, Color(0.18, 0.72, 1.0, 0.84 * (1.0 - ice_progress)), 4.0)
+		draw_arc(Vector2.ZERO, ice_radius * 0.72, 0.0, TAU, 36, Color(0.72, 0.96, 1.0, 0.54 * (1.0 - ice_progress)), 1.8)
+	elif action_time > 0.0 and action_name == "lightning":
+		var target_offset := action_target_position - global_position
+		if target_offset.length_squared() > 1.0:
+			draw_line(Vector2.ZERO, target_offset, Color(0.22, 0.76, 1.0, 0.30), 6.0)
+			draw_line(Vector2.ZERO, target_offset, Color(0.80, 0.98, 1.0, 0.90), 1.6)
+	elif action_time > 0.0 and action_name == "burst":
 		var progress := 1.0 - action_time / action_duration
 		var radius := lerpf(20.0, 148.0, progress)
 		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 56, Color(0.14, 0.94, 0.80, 0.90 * (1.0 - progress)), 4.0)
