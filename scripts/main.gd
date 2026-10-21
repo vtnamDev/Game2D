@@ -632,6 +632,7 @@ func _damage_enemy(enemy: Variant, amount: float) -> void:
 		return
 	if is_instance_valid(combat_fx):
 		combat_fx.add_hit(enemy.position, Color(1.0, 0.76, 0.38) if enemy.marked_time > 0.0 else Color(1.0, 0.43, 0.35))
+	request_camera_shake(1.5 if amount < 40.0 else 2.8, 0.055 if amount < 40.0 else 0.085)
 	if enemy.take_damage(amount):
 		_enemy_defeated(enemy)
 
