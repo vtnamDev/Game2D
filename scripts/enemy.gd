@@ -17,6 +17,9 @@ var alive: bool = true
 var animation_clock: float = 0.0
 var hurt_flash_left: float = 0.0
 var knockback_velocity: Vector2 = Vector2.ZERO
+var slow_left: float = 0.0
+var slow_factor: float = 1.0
+var visual_refresh_left: float = 0.0
 func _ready() -> void:
 	# Procedural silhouettes avoid missing actors on Android when imported SVGs are unavailable.
 	queue_redraw()
@@ -87,7 +90,12 @@ func tick(delta: float, player_position: Vector2) -> bool:
 	animation_clock += delta
 	hurt_flash_left = maxf(0.0, hurt_flash_left - delta)
 	marked_time = maxf(0.0, marked_time - delta)
+	slow_left = maxf(0.0, slow_left - delta)
 	attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
+	visual_refresh_left -= delta
+	if visual_refresh_left <= 0.0:
+		visual_refresh_left = 0.06
+		queue_redraw()
 	if not alive:
 		velocity = Vector2.ZERO
 		return false
@@ -101,7 +109,6 @@ func tick(delta: float, player_position: Vector2) -> bool:
 			windup_left = 0.0
 		else:
 			windup_left -= delta
-			queue_redraw()
 			if windup_left <= 0.0:
 				attack_cooldown_left = attack_cooldown_duration
 				move_and_slide()
@@ -113,15 +120,20 @@ func tick(delta: float, player_position: Vector2) -> bool:
 		velocity = knockback_velocity
 		knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 480.0 * delta)
 	elif distance > attack_range and distance > 0.001:
-		velocity = to_player / distance * move_speed
+		velocity = to_player / distance * move_speed * (slow_factor if slow_left > 0.0 else 1.0)
 	else:
 		velocity = Vector2.ZERO
 		if attack_cooldown_left <= 0.0:
 			windup_left = attack_windup
 
 	move_and_slide()
-	queue_redraw()
 	return false
+
+
+func apply_slow(duration: float, factor: float) -> void:
+	slow_left = maxf(slow_left, duration)
+	slow_factor = clampf(factor, 0.25, 1.0)
+	queue_redraw()
 
 
 func mark(duration: float) -> void:
@@ -164,6 +176,13 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 14.0, Color(0.003, 0.008, 0.016, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_enemy_body(bob)
+
+	if slow_left > 0.0:
+		draw_arc(Vector2.ZERO, 21.0 * visual_scale, 0.0, TAU, 28, Color(0.20, 0.78, 1.0, 0.75), 2.0)
+		for shard in range(3):
+			var ice_angle := TAU * float(shard) / 3.0 + animation_clock * 0.7
+			var ice_center := Vector2(cos(ice_angle), sin(ice_angle)) * 23.0 * visual_scale
+			draw_colored_polygon(PackedVector2Array([ice_center + Vector2(0.0, -3.0), ice_center + Vector2(2.5, 1.0), ice_center + Vector2(-2.5, 1.0)]), Color(0.64, 0.94, 1.0, 0.85))
 
 	if enemy_kind == "elite" or is_boss:
 		var aura_radius := 27.0 * visual_scale + sin(animation_clock * 3.0) * 2.0
@@ -216,6 +235,9 @@ func _draw_enemy_body(bob: float) -> void:
 	if hurt_flash_left > 0.0:
 		body_color = Color(0.92, 0.76, 0.72)
 		light_color = Color(1.0, 0.96, 0.76)
+	elif slow_left > 0.0:
+		body_color = Color(0.10, 0.34, 0.46)
+		light_color = Color(0.58, 0.93, 1.0)
 	elif windup_left > 0.0:
 		light_color = Color(1.0, 0.88, 0.36)
 
