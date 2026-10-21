@@ -42,7 +42,8 @@ func _draw() -> void:
 
 	# Rope and iron bindings add readable detail without expensive textures.
 	for fraction in [-0.28, 0.28]:
-		var x := plank_length * fraction
+		var ratio: float = float(fraction)
+		var x: float = plank_length * ratio
 		draw_rect(Rect2(x - 2.4, -half_thickness - 1.0, 4.8, plank_thickness + 2.0), Color(0.13, 0.16, 0.16), true)
 		draw_rect(Rect2(x - 1.1, -half_thickness - 1.0, 2.2, plank_thickness + 2.0), Color(0.62, 0.45, 0.24), true)
 		draw_circle(Vector2(x, -half_thickness + 2.0), 1.5, Color(0.93, 0.77, 0.45))
@@ -50,7 +51,8 @@ func _draw() -> void:
 
 	# Grain, cracks, and a pale edge catch the ambient light.
 	for fraction in [-0.39, -0.12, 0.16, 0.39]:
-		var x := plank_length * fraction
+		var ratio: float = float(fraction)
+		var x: float = plank_length * ratio
 		draw_line(Vector2(x - 5.0, -half_thickness * 0.56), Vector2(x + 4.0, -half_thickness * 0.45), Color(0.78, 0.49, 0.24, 0.62), 1.0)
 	draw_line(Vector2(-half_length + 8.0, -half_thickness + 1.5), Vector2(half_length - 8.0, -half_thickness + 1.5), Color(0.96, 0.71, 0.39, 0.62), 1.2)
 	draw_line(Vector2(-half_length + 7.0, half_thickness - 1.0), Vector2(half_length - 7.0, half_thickness - 1.0), Color(0.07, 0.045, 0.026, 0.9), 1.2)
