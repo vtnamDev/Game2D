@@ -11,7 +11,7 @@ Prototype hành động chiến thuật 2D góc nhìn từ trên xuống, viết
 - Bản đồ 2400 × 1600, camera bám kiếm khách, minimap hiện người chơi/quái/chướng ngại.
 - 12 rào gỗ có collider thật; nhân vật và quái có thể bị chặn đường.
 - Nền đá được vẽ theo vùng gần camera thay vì phải dựng chi tiết toàn bộ thế giới mỗi lần cập nhật.
-- Giới hạn 12 quái hoạt động đồng thời, thời gian sinh quái giãn hơn, VFX dùng một node quản lý với tối đa 22 hiệu ứng ngắn, âm thanh dùng 6 voice tái sử dụng; sprite nhân vật/quái và joystick được giới hạn tần suất redraw khoảng 30 FPS.
+- Giới hạn 8 quái hoạt động đồng thời, thời gian sinh quái giãn hơn, VFX dùng một node quản lý với tối đa 22 hiệu ứng ngắn, âm thanh dùng 6 voice tái sử dụng; sprite nhân vật/quái và joystick được giới hạn tần suất redraw khoảng 30 FPS.
 - Cụm nút được sắp xếp lại thành ba cột nhỏ hơn để giảm che khu vực chiến đấu; joystick thu gọn và cập nhật hình tối đa 30 FPS khi đang kéo.
 - Hình thể nhân vật/quái được vẽ bằng GDScript để có hình dự phòng ngay cả khi sprite texture gặp vấn đề; nền đá, rêu, tàn tích và gỗ là hình học procedural.
 - Có quái thường, quái nhanh, hộ vệ, tinh anh và trùm; mỗi loại có thông số sinh lực, tốc độ, sát thương và thời gian báo đòn khác nhau.
