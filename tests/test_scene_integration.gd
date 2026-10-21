@@ -20,7 +20,28 @@ func _run() -> void:
 		return
 	if not _check(is_instance_valid(main.player), "A player should be created at run start."):
 		return
+	if not _check(main.player.is_visible_in_tree(), "The player node must be visible in the scene tree."):
+		return
+	if not _check(is_equal_approx(main.player.health, main.player.max_health), "Player health should start full."):
+		return
 	if not _check(is_equal_approx(main.player.energy, 100.0), "Player energy should start full."):
+		return
+	var start_stats: Dictionary = main._status()
+	if not _check(float(start_stats.get("health", 0.0)) > 0.0, "The initial HUD must receive positive health."):
+		return
+	if not _check(is_equal_approx(float(start_stats.get("energy", 0.0)), 100.0), "The initial HUD must receive full energy."):
+		return
+	var obstacle_count := 0
+	for actor in main.actors.get_children():
+		if actor.is_in_group("arena_obstacle"):
+			obstacle_count += 1
+			if not _check(actor is StaticBody2D, "Every wood obstacle must have a physics body."):
+				return
+			if not _check(int(actor.collision_layer) == 4, "Wood obstacles must use the obstacle collision layer."):
+				return
+			if not _check(actor.get_child_count() > 0 and actor.get_child(0) is CollisionShape2D, "Wood obstacles must have an actual collision shape."):
+				return
+	if not _check(obstacle_count >= 5, "At least five wooden barricades should exist in the arena."):
 		return
 
 	# An unaffordable skill must not silently consume resources or start cooldown.

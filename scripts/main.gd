@@ -5,6 +5,7 @@ const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
 const ProjectileScript = preload("res://scripts/projectile.gd")
 const PickupScript = preload("res://scripts/crystal_pickup.gd")
+const WoodObstacleScript = preload("res://scripts/wood_obstacle.gd")
 
 const RUN_DURATION := 480.0
 const BOSS_SPAWN_TIME := 360.0
@@ -50,6 +51,7 @@ var ui_refresh_left: float = 0.0
 
 func _ready() -> void:
 	randomize()
+	_setup_wood_obstacles()
 	controls.process_mode = Node.PROCESS_MODE_ALWAYS
 	controls.start_requested.connect(_start_run)
 	controls.melee_pressed.connect(_on_melee_pressed)
@@ -147,9 +149,34 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_pause_pressed()
 
 
+func _setup_wood_obstacles() -> void:
+	actors.y_sort_enabled = true
+	for child in actors.get_children():
+		if child.is_in_group("arena_obstacle"):
+			return
+
+	var viewport_size := get_viewport_rect().size
+	var layouts: Array[Dictionary] = [
+		{"point": Vector2(0.18, 0.26), "length": 94.0, "angle": -0.16},
+		{"point": Vector2(0.80, 0.26), "length": 76.0, "angle": 1.48},
+		{"point": Vector2(0.17, 0.50), "length": 68.0, "angle": 1.52},
+		{"point": Vector2(0.82, 0.50), "length": 86.0, "angle": 0.20},
+		{"point": Vector2(0.31, 0.70), "length": 90.0, "angle": -0.32}
+	]
+	for layout in layouts:
+		var obstacle: Variant = StaticBody2D.new()
+		obstacle.set_script(WoodObstacleScript)
+		obstacle.position = Vector2(viewport_size.x * layout["point"].x, viewport_size.y * layout["point"].y)
+		obstacle.rotation = float(layout["angle"])
+		obstacle.configure(float(layout["length"]), 22.0)
+		actors.add_child(obstacle)
+
+
 func _start_run() -> void:
 	get_tree().paused = false
 	for child in actors.get_children():
+		if child.is_in_group("arena_obstacle"):
+			continue
 		child.free()
 	enemies.clear()
 	pickups.clear()
@@ -172,9 +199,15 @@ func _start_run() -> void:
 	counter_damage = 25.0
 	projectile_range = RANGED_RANGE
 
-	player = _new_actor_body(PlayerScript, 1, 2, 12.0)
+	player = _new_actor_body(PlayerScript, 1, 6, 12.0)
 	actors.add_child(player)
 	player.position = get_viewport_rect().size * 0.5
+	player.visible = true
+	player.modulate = Color.WHITE
+	player.self_modulate = Color.WHITE
+	player.health = player.max_health
+	player.energy = player.max_energy
+	player.queue_redraw()
 	mode = "playing"
 	message = "ĐÁNH ĐẤU ĐỂ GẮN ẤN • KIẾM KHÍ KÍCH NỔ • NÉ ĐÚNG LÚC ĐỂ PHẢN KÍCH"
 	message_lifetime = 3.2
@@ -217,7 +250,7 @@ func _spawn_enemy(forced_kind: String = "") -> void:
 			spawn_position = Vector2(randf_range(bounds.position.x, bounds.end.x), bounds.end.y)
 
 	var radius := 23.0 if kind == "boss" else (16.0 if kind == "guardian" or kind == "elite" else 12.0)
-	var enemy: Variant = _new_actor_body(EnemyScript, 2, 3, radius)
+	var enemy: Variant = _new_actor_body(EnemyScript, 2, 5, radius)
 	enemy.position = spawn_position
 	enemy.configure_kind(kind, elapsed_seconds / RUN_DURATION)
 	actors.add_child(enemy)

@@ -12,22 +12,34 @@ func _draw() -> void:
 
 	draw_rect(Rect2(Vector2.ZERO, bounds), Color(0.035, 0.052, 0.065), true)
 
+	# Staggered, chipped paving stones: keep seams subtle so the arena does not look like a graph-paper grid.
 	for y in range(0, int(bounds.y) + TILE_H, TILE_H):
-		for x in range(0, int(bounds.x) + TILE_W, TILE_W):
-			var shade := rng.randf_range(-0.012, 0.014)
-			var tile_color := Color(0.075 + shade, 0.105 + shade, 0.119 + shade)
-			draw_rect(Rect2(Vector2(x + 1, y + 1), Vector2(TILE_W - 2, TILE_H - 2)), tile_color, true)
-			draw_line(Vector2(x + 3, y + TILE_H - 2), Vector2(x + TILE_W - 3, y + TILE_H - 2), Color(0.13, 0.17, 0.18, 0.55), 1.0)
-			draw_line(Vector2(x + TILE_W - 2, y + 3), Vector2(x + TILE_W - 2, y + TILE_H - 3), Color(0.025, 0.044, 0.052, 0.75), 1.0)
+		var row_index := int(y / TILE_H)
+		var stagger := TILE_W * 0.5 if row_index % 2 == 0 else 0.0
+		for column in range(-1, int(ceil(bounds.x / float(TILE_W))) + 1):
+			var x := float(column * TILE_W) - stagger
+			var shade := rng.randf_range(-0.013, 0.015)
+			var tile_color := Color(0.071 + shade, 0.095 + shade, 0.105 + shade)
+			var chip := rng.randf_range(1.0, 4.0)
+			var tile_points := PackedVector2Array([
+				Vector2(x + 4.0, y + 2.0),
+				Vector2(x + TILE_W - 4.0, y + 1.0 + chip * 0.2),
+				Vector2(x + TILE_W - 1.5, y + TILE_H * 0.42),
+				Vector2(x + TILE_W - 5.0, y + TILE_H - 2.5),
+				Vector2(x + 4.0 + chip, y + TILE_H - 1.5),
+				Vector2(x + 1.5, y + TILE_H * 0.42)
+			])
+			draw_colored_polygon(tile_points, Color(0.012, 0.018, 0.022, 0.40))
+			draw_colored_polygon(tile_points, tile_color)
+			draw_line(Vector2(x + 5.0, y + 3.0), Vector2(x + TILE_W - 5.0, y + 2.0 + chip * 0.2), Color(0.19, 0.24, 0.24, 0.18), 1.0)
 
-			if rng.randf() < 0.14:
+			if rng.randf() < 0.11:
 				var crack_start := Vector2(x + rng.randf_range(7.0, TILE_W - 8.0), y + rng.randf_range(7.0, TILE_H - 8.0))
-				draw_line(crack_start, crack_start + Vector2(rng.randf_range(3.0, 9.0), rng.randf_range(2.0, 7.0)), Color(0.025, 0.044, 0.052, 0.8), 1.0)
-			if rng.randf() < 0.12:
+				draw_line(crack_start, crack_start + Vector2(rng.randf_range(3.0, 9.0), rng.randf_range(2.0, 7.0)), Color(0.018, 0.032, 0.035, 0.86), 1.0)
+			if rng.randf() < 0.14:
 				var moss_pos := Vector2(x + rng.randf_range(8.0, TILE_W - 8.0), y + rng.randf_range(8.0, TILE_H - 8.0))
-				draw_circle(moss_pos, rng.randf_range(2.0, 5.0), Color(0.12, 0.20, 0.13, 0.48))
-				draw_circle(moss_pos + Vector2(3.0, -1.0), 2.0, Color(0.18, 0.25, 0.15, 0.4))
-
+				draw_circle(moss_pos, rng.randf_range(2.0, 5.0), Color(0.12, 0.20, 0.13, 0.42))
+				draw_circle(moss_pos + Vector2(3.0, -1.0), 2.0, Color(0.18, 0.25, 0.15, 0.34))
 	# Broken paving and low vegetation around the arena, with the central combat lane kept readable.
 	for index in range(92):
 		var point := Vector2(rng.randf_range(28.0, bounds.x - 28.0), rng.randf_range(35.0, bounds.y - 35.0))

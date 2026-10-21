@@ -1,13 +1,5 @@
 extends CharacterBody2D
 
-const ENEMY_SPRITES: Dictionary = {
-	"shade": preload("res://assets/art/enemy_shade.svg"),
-	"stalker": preload("res://assets/art/enemy_stalker.svg"),
-	"guardian": preload("res://assets/art/enemy_guardian.svg"),
-	"elite": preload("res://assets/art/enemy_elite.svg"),
-	"boss": preload("res://assets/art/enemy_boss.svg")
-}
-
 var enemy_kind: String = "shade"
 var max_health: float = 34.0
 var health: float = 34.0
@@ -25,32 +17,13 @@ var alive: bool = true
 var animation_clock: float = 0.0
 var hurt_flash_left: float = 0.0
 var knockback_velocity: Vector2 = Vector2.ZERO
-var visual_sprite: Sprite2D
-
-
 func _ready() -> void:
-	_refresh_sprite()
+	# Procedural silhouettes avoid missing actors on Android when imported SVGs are unavailable.
+	queue_redraw()
 
 
 func _refresh_sprite() -> void:
-	if is_instance_valid(visual_sprite):
-		visual_sprite.queue_free()
-	visual_sprite = Sprite2D.new()
-	visual_sprite.texture = ENEMY_SPRITES.get(enemy_kind, ENEMY_SPRITES["shade"]) as Texture2D
-	visual_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	visual_sprite.show_behind_parent = true
-	var sprite_scale := 0.82
-	match enemy_kind:
-		"stalker":
-			sprite_scale = 0.78
-		"guardian":
-			sprite_scale = 0.88
-		"elite":
-			sprite_scale = 0.91
-		"boss":
-			sprite_scale = 1.05
-	visual_sprite.scale = Vector2.ONE * sprite_scale
-	add_child(visual_sprite)
+	queue_redraw()
 
 
 func configure_kind(next_kind: String, difficulty: float) -> void:
@@ -107,21 +80,12 @@ func configure_kind(next_kind: String, difficulty: float) -> void:
 	move_speed += clampf(difficulty, 0.0, 1.0) * 5.0
 	health = max_health
 	attack_cooldown_left = randf_range(0.25, 0.75)
-	if is_instance_valid(visual_sprite):
-		_refresh_sprite()
+	queue_redraw()
 
 
 func tick(delta: float, player_position: Vector2) -> bool:
 	animation_clock += delta
 	hurt_flash_left = maxf(0.0, hurt_flash_left - delta)
-	if is_instance_valid(visual_sprite):
-		visual_sprite.position.y = sin(animation_clock * (6.0 if enemy_kind == "stalker" else 3.0)) * (1.1 if enemy_kind != "boss" else 0.5)
-		if hurt_flash_left > 0.0:
-			visual_sprite.modulate = Color(1.0, 0.55, 0.55, 1.0)
-		elif windup_left > 0.0:
-			visual_sprite.modulate = Color(1.0, 0.78, 0.68, 1.0)
-		else:
-			visual_sprite.modulate = Color.WHITE
 	marked_time = maxf(0.0, marked_time - delta)
 	attack_cooldown_left = maxf(0.0, attack_cooldown_left - delta)
 	if not alive:
@@ -199,6 +163,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2(1.0, 6.0 + bob), 0.0, Vector2(1.4 * visual_scale, 0.52 * visual_scale))
 	draw_circle(Vector2.ZERO, 14.0, Color(0.003, 0.008, 0.016, 0.68))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_enemy_body(bob)
 
 	if enemy_kind == "elite" or is_boss:
 		var aura_radius := 27.0 * visual_scale + sin(animation_clock * 3.0) * 2.0
@@ -229,3 +194,84 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2(-bar_width * 0.5, bar_y), Vector2(bar_width * clampf(health / maxf(1.0, max_health), 0.0, 1.0), 1.5)), Color(1.0, 0.66, 0.55, 0.9), true)
 	if is_boss:
 		draw_rect(Rect2(Vector2(-40.0, bar_y - 4.0), Vector2(80.0, 2.0)), Color(1.0, 0.61, 0.25, 0.8), true)
+
+
+func _draw_enemy_body(bob: float) -> void:
+	var outline := Color(0.018, 0.009, 0.020)
+	var body_color := Color(0.40, 0.10, 0.18)
+	var light_color := Color(0.88, 0.27, 0.29)
+	match enemy_kind:
+		"stalker":
+			body_color = Color(0.08, 0.30, 0.24)
+			light_color = Color(0.36, 0.91, 0.62)
+		"guardian":
+			body_color = Color(0.19, 0.31, 0.39)
+			light_color = Color(0.66, 0.82, 0.87)
+		"elite":
+			body_color = Color(0.30, 0.13, 0.39)
+			light_color = Color(0.96, 0.39, 0.39)
+		"boss":
+			body_color = Color(0.15, 0.08, 0.16)
+			light_color = Color(1.0, 0.30, 0.20)
+	if hurt_flash_left > 0.0:
+		body_color = Color(0.92, 0.76, 0.72)
+		light_color = Color(1.0, 0.96, 0.76)
+	elif windup_left > 0.0:
+		light_color = Color(1.0, 0.88, 0.36)
+
+	draw_set_transform(Vector2(0.0, bob), 0.0, Vector2.ONE * visual_scale)
+
+	if enemy_kind == "stalker":
+		# Lean, many-legged silhouette for the fast hunter.
+		for limb_index in range(4):
+			var side := -1.0 if limb_index < 2 else 1.0
+			var y_offset := -5.0 + float(limb_index % 2) * 9.0
+			draw_line(Vector2(side * 5.0, y_offset), Vector2(side * (13.0 + float(limb_index % 2) * 2.0), y_offset + (4.0 if limb_index % 2 == 0 else -4.0)), outline, 3.0)
+			draw_line(Vector2(side * 5.0, y_offset), Vector2(side * (13.0 + float(limb_index % 2) * 2.0), y_offset + (4.0 if limb_index % 2 == 0 else -4.0)), body_color, 1.4)
+
+	# Chunky jagged outer contour creates readable sprite-like edges.
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-14.0, -5.0), Vector2(-12.0, -13.0), Vector2(-7.0, -12.0),
+		Vector2(-4.0, -18.0), Vector2(0.0, -14.0), Vector2(5.0, -18.0),
+		Vector2(8.0, -12.0), Vector2(12.0, -13.0), Vector2(15.0, -5.0),
+		Vector2(12.0, 5.0), Vector2(7.0, 12.0), Vector2(0.0, 14.0),
+		Vector2(-8.0, 11.0), Vector2(-13.0, 4.0)
+	]), outline)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-11.0, -5.0), Vector2(-9.0, -11.0), Vector2(-5.0, -10.0),
+		Vector2(-2.0, -14.0), Vector2(1.0, -11.0), Vector2(5.0, -14.0),
+		Vector2(8.0, -10.0), Vector2(10.0, -11.0), Vector2(12.0, -4.0),
+		Vector2(10.0, 4.0), Vector2(6.0, 9.0), Vector2(0.0, 11.0),
+		Vector2(-7.0, 9.0), Vector2(-10.0, 3.0)
+	]), body_color)
+
+	# Variant-specific armor and anatomy.
+	match enemy_kind:
+		"guardian":
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(-12.0, -8.0), Vector2(-5.0, -14.0), Vector2(7.0, -13.0),
+				Vector2(13.0, -5.0), Vector2(10.0, 7.0), Vector2(0.0, 12.0),
+				Vector2(-11.0, 6.0)
+			]), Color(0.09, 0.16, 0.22))
+			draw_line(Vector2(-9.0, -4.0), Vector2(9.0, -4.0), light_color, 2.4)
+			draw_line(Vector2(-7.0, 3.0), Vector2(7.0, 3.0), Color(0.43, 0.65, 0.72), 2.0)
+		"elite":
+			draw_colored_polygon(PackedVector2Array([Vector2(-7.0, -10.0), Vector2(-4.0, -17.0), Vector2(0.0, -12.0), Vector2(5.0, -17.0), Vector2(8.0, -10.0)]), Color(0.77, 0.24, 0.43))
+			draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 28, Color(0.83, 0.37, 1.0, 0.38), 2.0)
+		"boss":
+			draw_colored_polygon(PackedVector2Array([Vector2(-10.0, -9.0), Vector2(-18.0, -22.0), Vector2(-4.0, -17.0), Vector2(0.0, -12.0)]), Color(0.09, 0.04, 0.09))
+			draw_colored_polygon(PackedVector2Array([Vector2(10.0, -9.0), Vector2(18.0, -22.0), Vector2(4.0, -17.0), Vector2(0.0, -12.0)]), Color(0.09, 0.04, 0.09))
+			draw_colored_polygon(PackedVector2Array([Vector2(-8.0, -3.0), Vector2(0.0, -8.0), Vector2(8.0, -3.0), Vector2(6.0, 7.0), Vector2(0.0, 10.0), Vector2(-6.0, 7.0)]), Color(0.29, 0.11, 0.12))
+		"stalker":
+			draw_colored_polygon(PackedVector2Array([Vector2(-5.0, -7.0), Vector2(-2.0, -15.0), Vector2(4.0, -12.0), Vector2(7.0, -6.0), Vector2(3.0, 3.0), Vector2(-5.0, 3.0)]), Color(0.09, 0.43, 0.31))
+		_:
+			draw_colored_polygon(PackedVector2Array([Vector2(-7.0, -8.0), Vector2(-4.0, -12.0), Vector2(5.0, -12.0), Vector2(8.0, -7.0), Vector2(4.0, 2.0), Vector2(-4.0, 2.0)]), Color(0.25, 0.055, 0.11))
+
+	# Bright eyes, forehead marks, and a core light provide a readable focal point.
+	draw_rect(Rect2(-7.0, -5.0, 4.0, 2.5), light_color, true)
+	draw_rect(Rect2(3.0, -5.0, 4.0, 2.5), light_color, true)
+	draw_rect(Rect2(-4.0, 2.0, 8.0, 1.8), Color(1.0, 0.75, 0.42, 0.72), true)
+	draw_line(Vector2(-7.0, 7.0), Vector2(0.0, 10.0), Color(0.94, 0.54, 0.28, 0.84), 1.4)
+	draw_line(Vector2(0.0, 10.0), Vector2(7.0, 7.0), Color(0.94, 0.54, 0.28, 0.84), 1.4)
+
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
