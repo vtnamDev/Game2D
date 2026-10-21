@@ -13,6 +13,30 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 
+	# Static art should be generated once and submitted as one floor texture, not rebuilt every camera step.
+	var background: Node = main.get_node("World/ArenaBackground")
+	if not _check(background.floor_texture != null, "The cached floor texture must initialize."):
+		return
+	if not _check(background.floor_texture.get_size() == Vector2i(1200, 800), "The low-memory floor texture must use half-resolution world dimensions."):
+		return
+	var props_texture: Texture2D = load("res://assets/art/arena_props_atlas.png")
+	if not _check(props_texture != null and props_texture.get_size() == Vector2i(256, 64), "The generated environment prop atlas must import at 256x64."):
+		return
+	if not _check(is_instance_valid(main.combat_fx), "The shared combat feedback manager must exist."):
+		return
+	if not _check(main.combat_fx._sounds.size() >= 10, "Procedural audio bank must include at least ten combat sounds."):
+		return
+	for sound_name in ["swing", "hit", "dash", "slam", "ice", "lightning", "ultimate", "death", "pickup"]:
+		var stream: AudioStreamWAV = main.combat_fx._sounds.get(sound_name)
+		if not _check(stream != null and stream.data.size() > 100, "Audio effect %s must contain generated PCM data." % sound_name):
+			return
+	main.combat_fx.add_slash(Vector2(100.0, 100.0), Vector2.RIGHT)
+	if not _check(main.combat_fx._effects.size() == 1, "Visual combat effects should be batched in the shared manager."):
+		return
+	main.combat_fx.clear_effects()
+	if not _check(main.combat_fx._effects.is_empty(), "Starting a new run must clear leftover combat effects."):
+		return
+
 	main._start_run()
 	main.spawn_timer = 1000.0
 	await process_frame
