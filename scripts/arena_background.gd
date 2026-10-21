@@ -4,74 +4,27 @@ extends Node2D
 ## Props use an original, compact generated pixel-art atlas.
 
 const WORLD_SIZE := Vector2(2400.0, 1600.0)
-const FLOOR_SCALE := 0.5
-const TILE_W := 24
-const TILE_H := 18
 const PROP_ATLAS: Texture2D = preload("res://assets/art/arena_props_atlas.png")
+const FLOOR_TILE: Texture2D = preload("res://assets/art/stone_floor_tile.svg")
 const PROP_CELL := 64
 
 var floor_texture: Texture2D
 
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	floor_texture = _build_floor_texture()
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# Imported texture resources are more reliable across mobile Compatibility drivers than
+	# uploading a large runtime ImageTexture during scene startup.
+	floor_texture = FLOOR_TILE
 	queue_redraw()
 
 
-func _build_floor_texture() -> Texture2D:
-	var image_width := int(WORLD_SIZE.x * FLOOR_SCALE)
-	var image_height := int(WORLD_SIZE.y * FLOOR_SCALE)
-	var image := Image.create(image_width, image_height, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0.025, 0.036, 0.043, 1.0))
-	var rng := RandomNumberGenerator.new()
-
-	for row in range(ceili(float(image_height) / TILE_H)):
-		var y := row * TILE_H
-		var stagger := TILE_W / 2 if row % 2 == 0 else 0
-		for column in range(ceili(float(image_width) / TILE_W) + 1):
-			var x := column * TILE_W - stagger
-			if x + TILE_W < 0 or x >= image_width:
-				continue
-			rng.seed = int(abs(column * 73856093 + row * 19349663 + 734129))
-			var shade := rng.randf_range(-0.012, 0.014)
-			var stone := Color(0.067 + shade, 0.088 + shade, 0.098 + shade, 1.0)
-			var stone_shadow := Color(0.007, 0.012, 0.016, 1.0)
-			var stone_highlight := Color(0.18, 0.22, 0.23, 0.32)
-			var left := maxi(0, x + 2)
-			var top := y + 2
-			var right := mini(image_width, x + TILE_W - 2)
-			var bottom := mini(image_height, y + TILE_H - 2)
-			if right <= left or bottom <= top:
-				continue
-			image.fill_rect(Rect2i(left, top, right - left, bottom - top), stone)
-			# Chipped corners and varied seams create paving without thousands of draw calls.
-			image.set_pixel(left, top, stone_shadow)
-			image.set_pixel(mini(right - 1, left + 1), top, stone_shadow)
-			image.set_pixel(right - 1, top, stone_shadow)
-			image.set_pixel(left, bottom - 1, stone_shadow)
-			image.set_pixel(right - 1, bottom - 1, stone_shadow)
-			image.fill_rect(Rect2i(left + 2, top + 1, maxi(1, right - left - 5), 1), stone_highlight)
-			if rng.randf() < 0.10:
-				var crack_x := clampi(left + rng.randi_range(5, maxi(5, right - left - 7)), left, right - 1)
-				var crack_y := clampi(top + rng.randi_range(5, maxi(5, bottom - top - 5)), top, bottom - 1)
-				image.set_pixel(crack_x, crack_y, stone_shadow)
-				image.set_pixel(mini(right - 1, crack_x + 1), mini(bottom - 1, crack_y + 1), stone_shadow)
-			if rng.randf() < 0.13:
-				var moss_x := clampi(left + rng.randi_range(3, maxi(3, right - left - 4)), left, right - 1)
-				var moss_y := clampi(top + rng.randi_range(3, maxi(3, bottom - top - 4)), top, bottom - 1)
-				var moss_color := Color(0.095, 0.15, 0.09, 1.0)
-				image.set_pixel(moss_x, moss_y, moss_color)
-				image.set_pixel(mini(right - 1, moss_x + 1), moss_y, moss_color)
-
-	return ImageTexture.create_from_image(image)
-
-
 func _draw() -> void:
-	if floor_texture == null:
-		return
-	# The complete floor is a single texture submission; camera movement no longer rebuilds tile geometry.
-	draw_texture_rect(floor_texture, Rect2(Vector2.ZERO, WORLD_SIZE), false, Color.WHITE)
+	# Always submit a visible ground layer before the decorative tile texture, so a texture issue
+	# cannot leave the clear-color black field seen on the affected Android build.
+	draw_rect(Rect2(Vector2.ZERO, WORLD_SIZE), Color(0.12, 0.16, 0.17, 1.0), true)
+	if floor_texture != null:
+		draw_texture_rect(floor_texture, Rect2(Vector2.ZERO, WORLD_SIZE), true, Color.WHITE)
 
 	# Opening chamber: large landmarks, braziers and rune platforms frame the player without blocking the combat lane.
 	_draw_prop(Vector2(835.0, 580.0), 0, Vector2(118.0, 126.0))
